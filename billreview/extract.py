@@ -34,7 +34,7 @@ def extract(pdf_path, ref, electronic, evidence_dir):
         for ln in lines:
             p = ln["parsed"] or {}
             row = {
-                "line_id": f"{f['bill_id']}-{ln['row']:02d}" if f["bill_id"] else f"PAGE{page_no:02d}-{ln['row']:02d}",
+                "line_id": f"{f['bill_id']}-{ln['row']:02d}" if f["bill_id"] else f"UNREAD-PAGE{page_no:02d}-{ln['row']:02d}",
                 "bill_id": f["bill_id"], "page": page_no, "row": ln["row"],
                 "received_date": f["received_date"], "claim_number": f["claim_number"],
                 "claimant_name": f["claimant_name"], "claimant_dob": f["claimant_dob"],
@@ -43,7 +43,10 @@ def extract(pdf_path, ref, electronic, evidence_dir):
                 "modifier": p.get("modifier", ""), "units": p.get("units", ""),
                 "billed_charge": p.get("billed_charge", ""), "diagnosis_code": f["diagnosis_code"],
                 "form_total_charge": f["total_charge"],
-                "ocr_checks": list(page_checks) + ([] if ln["parsed"] else ["could not read service line"]),
+                "ocr_checks": list(page_checks) + ([] if ln["parsed"] else ["could not read service line"])
+                + ([] if f.get("table_rows_aligned", True) else
+                   ["service-table rules are not where the form layout expects them; check the row and "
+                    "line number against the scan"]),
                 "ocr_raw": ln["raw"],
                 "box": [v // 2 for v in ln["crop_box"]],
             }
@@ -111,10 +114,15 @@ def read_extraction(path, ref, electronic):
 
 
 def to_bill_lines(rows, ref, electronic):
-    """Shape extracted rows like bills.csv lines (body part from bills.csv by diagnosis code)."""
-    body_by_dx = {}
+    """Shape extracted rows like bills.csv lines (body part from bills.csv by diagnosis code).
+
+    If bills.csv gives the same diagnosis code more than one body part, no body part is assigned:
+    the line then gets a rule-12 question instead of a guessed rule-5 result.
+    """
+    parts_by_dx = {}
     for l in electronic:
-        body_by_dx.setdefault(l["diagnosis_code"], (l["body_part"], l["line_id"]))
+        parts_by_dx.setdefault(l["diagnosis_code"], {}).setdefault(l["body_part"], l["line_id"])
+    body_by_dx = {dx: next(iter(p.items())) for dx, p in parts_by_dx.items() if len(p) == 1}
     lines = []
     for r in rows:
         bp, bp_src = body_by_dx.get(r["diagnosis_code"], ("", ""))

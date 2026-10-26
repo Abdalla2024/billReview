@@ -381,3 +381,35 @@ def test_in_network_without_date_is_priced_out_of_network_and_asked(base):
     v = {x["line"]["line_id"]: x for x in r.run()}
     assert not v["HB2609922-01"]["flagged"]  # PX130 1750 billed = 100% fee
     assert any("no network_since" in q["question"] for q in r.questions)
+
+
+# ------------------------------------------------------------ input validation and paper parsing
+
+def test_unusable_fields_are_reported_not_guessed():
+    from billreview.cli import unusable_fields
+    good = {"line_id": "HB1-01", "bill_id": "HB1", "claim_number": "WC", "claimant_dob": "1970-01-01",
+            "billing_tin": "1", "rendering_npi": "1", "date_of_service": "2026-09-01", "procedure_code": "PX1",
+            "units": "2", "billed_charge": "10.50", "received_date": "", "source": "electronic"}
+    assert unusable_fields(good) == []
+    assert unusable_fields(dict(good, units="1.0")) == ["units"]
+    assert unusable_fields(dict(good, billed_charge="$10.50")) == ["billed_charge"]
+    assert unusable_fields(dict(good, claimant_dob="")) == ["claimant_dob"]
+    assert unusable_fields(dict(good, source="paper", bill_id="", line_id="UNREAD-PAGE01-01")) == ["bill_id"]
+
+
+def test_paper_cell_parser():
+    from billreview.ocr import _parse_cells
+    p = _parse_cells(["09 05 26", "11", "E0730-RR", "A", "62.56", "1", "1386719405"])
+    assert (p["procedure_code"], p["modifier"], p["date_of_service"]) == ("E0730", "RR", "2026-09-05")
+    assert _parse_cells(["09 05 26", "11", "PX270", "A", "62.56", "", "1386719405"]) is None
+
+
+def test_paper_dx_takes_body_part_only_when_unambiguous(base):
+    from billreview import extract
+    ref, lines, _ = base
+    lines = copy.deepcopy(lines)
+    row = {"line_id": "HB9-01", "bill_id": "HB9", "page": 1, "row": 1, "diagnosis_code": "S46.011A",
+           "billing_tin": "52-3817406", "box": None}
+    assert extract.to_bill_lines([row], ref, lines)[0]["body_part"] == "right shoulder"
+    lines.append(dict(lines[0], line_id="HBX-01", diagnosis_code="S46.011A", body_part="left shoulder"))
+    assert extract.to_bill_lines([row], ref, lines)[0]["body_part"] == ""

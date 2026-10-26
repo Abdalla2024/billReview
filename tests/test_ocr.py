@@ -24,3 +24,14 @@ def test_ocr_matches_hand_verified_values(tmp_path):
         for k, v in want.items():
             assert str(got[k]) == v, (want["line_id"], k, got[k], v)
         assert got["ocr_checks"] == [], (got["line_id"], got["ocr_checks"])
+
+
+@pytest.mark.skipif(shutil.which("tesseract") is None, reason="tesseract not installed")
+def test_table_alignment_check_detects_shifted_rows():
+    import pymupdf
+    from billreview import ocr
+    page = pymupdf.open(ROOT / "data" / "2026-09" / "paper-bills.pdf")[0]
+    img, _ = ocr.deskew(ocr.render(page))
+    top, left, right = ocr.form_box(img)
+    assert ocr.table_rows_aligned(img, top, left, right)
+    assert not ocr.table_rows_aligned(img, top + 55, left, right)

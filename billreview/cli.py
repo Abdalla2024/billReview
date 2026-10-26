@@ -1,6 +1,7 @@
 """Review one month of bills: python -m billreview --data data [--month 2026-09] [--out out/2026-09]"""
 import argparse
 import json
+import re
 from pathlib import Path
 
 from . import data, extract, report
@@ -8,8 +9,21 @@ from .verify import verify
 from .rules import Review, fmt
 
 INTERNAL = {"source", "source_ref", "box", "body_part_ev", "ocr_raw", "ocr_checks"}
-REQUIRED = ["claim_number", "claimant_dob", "billing_tin", "rendering_npi", "date_of_service", "procedure_code",
-            "units", "billed_charge", "received_date"]
+# received_date is only used by rule 3, which asks a question when it is missing
+REQUIRED = ["line_id", "bill_id", "claim_number", "claimant_dob", "billing_tin", "rendering_npi", "date_of_service",
+            "procedure_code", "units", "billed_charge"]
+FORMATS = {"claimant_dob": r"\d{4}-\d\d-\d\d", "date_of_service": r"\d{4}-\d\d-\d\d",
+           "received_date": r"(\d{4}-\d\d-\d\d)?", "units": r"\d+", "billed_charge": r"\d+(\.\d{1,2})?"}
+
+
+def unusable_fields(line):
+    """Fields the rules need that are missing or not in the expected format."""
+    bad = [k for k in REQUIRED if not str(line.get(k, "")).strip()]
+    bad += [k for k, rx in FORMATS.items()
+            if k not in bad and not re.fullmatch(rx, str(line.get(k, "")).strip())]
+    if line.get("source") == "paper" and line.get("bill_id") and not line["line_id"].startswith(line["bill_id"]):
+        bad.append("line_id")
+    return bad
 
 
 def run(data_dir, month=None, out_dir=None, paper_extraction=None):
@@ -36,14 +50,15 @@ def run(data_dir, month=None, out_dir=None, paper_extraction=None):
     # a line missing a field the rules need cannot be reviewed; it is reported, never guessed
     reviewable, unreadable = [], []
     for l in electronic + paper:
-        missing = [k for k in REQUIRED if not str(l.get(k, "")).strip()]
+        missing = unusable_fields(l)
         (unreadable if missing else reviewable).append((l, missing))
     review = Review([l for l, _ in reviewable], notes, ref)
     verdicts = review.run()
     for l, missing in unreadable:
-        review.question([l["line_id"]], f"Could not read {', '.join(missing)} from {l['source_ref']}; the line "
-                        "was not reviewed. Read the scan, correct paper-extraction.csv and re-run with "
-                        "--paper-extraction.")
+        fix = ("Read the scan, correct paper-extraction.csv and re-run with --paper-extraction."
+               if l["source"] == "paper" else "Check the line in bills.csv.")
+        review.question([l["line_id"]], f"Missing or unreadable {', '.join(missing)} in {l['source_ref']}; the "
+                        f"line was not reviewed and is not flagged. {fix}")
         verdicts.append({"line": l, "flagged": False, "calc": None, "status": "not reviewed (unreadable)"})
 
     accounting = {"electronic": len(electronic), "paper": len(paper), "pages": pages,

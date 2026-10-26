@@ -234,8 +234,12 @@ def read_page(page):
 
     y = top + SECTION * 3
     raw["band4"] = tesseract(img[y + 36:y + SECTION - 3, left + 6:right - 6], psm=7)
-    m = re.search(r"A\W*[S$5]+\s?(\d{2})\s?[.,]\s?([0-9A-Z]{1,4})", raw["band4"].upper())
-    fields["diagnosis_code"] = f"S{m.group(1)}.{m.group(2).replace('O', '0')}" if m else ""
+    m = re.search(r"\bA\W*([A-Z$5]|S\$)\s?(\d{2})\s?[.,]\s?([0-9A-Z]{1,4})", raw["band4"].upper())
+    if m:
+        letter = {"$": "S", "5": "S", "S$": "S"}.get(m.group(1), m.group(1))
+        fields["diagnosis_code"] = f"{letter}{m.group(2)}.{m.group(3).replace('O', '0')}"
+    else:
+        fields["diagnosis_code"] = ""
 
     yf = top + FOOTER
     fboxes = cells(img, yf + 8, yf + SECTION - 8, left, right, 3)
@@ -256,6 +260,7 @@ def read_page(page):
     # service-line table: row number | date | place | procedure | pointer | charges | units | NPI
     t0, t1 = int(top + TABLE_HEADER), int(top + TABLE_HEADER + ROW * ROWS)
     cols = cells(img, t0 - 40, int(top + FOOTER - 20), left, right, 8)
+    fields["table_rows_aligned"] = table_rows_aligned(img, top, left, right)
     lines = []
     for r in range(ROWS):
         y0 = int(t0 + ROW * r)
@@ -277,10 +282,27 @@ def read_page(page):
     return fields, lines, raw, img
 
 
+def table_rows_aligned(img, top, left, right, tol=8):
+    """True when a ruled line sits at every expected service-row boundary.
+
+    Rows are located by fixed geometry from the form's top line; if a form is scaled or laid out
+    differently the rows would be read from the wrong place, so this is reported for review.
+    """
+    bw = (cv2.medianBlur(img, 3) < 200).astype(np.uint8)
+    h = cv2.morphologyEx(bw[:, left:right], cv2.MORPH_OPEN,
+                         cv2.getStructuringElement(cv2.MORPH_RECT, (150, 1)))
+    ys = np.where(h.sum(1) > 0.6 * (right - left))[0]
+    for k in range(ROWS + 1):
+        y = top + TABLE_HEADER + ROW * k
+        if not np.any(np.abs(ys - y) <= tol):
+            return False
+    return True
+
+
 def _parse_cells(c):
     date, _pos, proc, _ptr, charge, units, npi = c
     m_date = re.fullmatch(r"(\d\d) ?(\d\d) ?(\d\d)", re.sub(r"\s+", " ", date.strip()))
-    m_proc = re.fullmatch(r"((?:PX\d{3})|(?:[A-Z]\d{4}))(?: ?([A-Z]{2}))?", proc.strip())
+    m_proc = re.fullmatch(r"((?:PX\d{3})|(?:[A-Z]\d{4}))(?:[ -]?([A-Z]{2}))?", proc.strip())
     m_charge = re.fullmatch(r"\d+\.\d\d", charge.strip())
     m_units = re.fullmatch(r"\d{1,2}", units.strip())
     m_npi = re.fullmatch(r"\d{10}", npi.strip())
