@@ -1,0 +1,85 @@
+auth_id,claim_number,provider_group,billing_tin,service_category,approved_visits,start_date,end_date,approved_date
+AU-26011,WC26-03871,Quillan Bone and Joint,52-4097721,orthopaedic care,,2026-06-18,2026-12-31,2026-06-18
+AU-26022,WC26-03902,Severn Ridge Orthopaedics,52-3817406,orthopaedic care,,2026-05-29,2026-12-31,2026-05-29
+AU-26033,WC26-03955,Severn Ridge Orthopaedics,52-3817406,orthopaedic care,,2026-06-03,2026-12-31,2026-06-03
+AU-26044,WC26-03955,Tri-Hollow Medical Supply,52-5561290,durable medical equipment: knee brace,,2026-06-03,2026-12-31,2026-06-03
+AU-26055,WC26-04011,Aldgrove Imaging Center,52-7720154,diagnostic imaging,,2026-06-11,2026-12-31,2026-06-11
+AU-26066,WC26-04011,Quillan Bone and Joint,52-4097721,orthopaedic care,,2026-06-11,2026-12-31,2026-06-11
+AU-26077,WC26-04011,St. Aubrey Medical Center,52-0716649,emergency treatment,,2026-06-11,2026-06-11,2026-06-11
+AU-26088,WC26-04011,Tolliver Spine and Pain,52-2964018,pain management,,2026-06-11,2026-12-31,2026-06-11
+AU-26099,WC26-04011,Wexcombe Physical Therapy,52-4410937,physical therapy,2,2026-07-27,2026-12-31,2026-07-27
+AU-26110,WC26-04036,Quillan Bone and Joint,52-4097721,orthopaedic care,,2026-06-16,2026-12-31,2026-06-16
+AU-26121,WC26-04036,Linthwaite Motion PT,52-6038812,physical therapy,8,2026-07-27,2026-12-31,2026-07-27
+AU-26132,WC26-04059,Easterbrook Occupational Health,52-1830962,occupational medicine,,2026-06-25,2026-12-31,2026-06-25
+AU-26143,WC26-04059,Pembry Home Medical,52-2275043,durable medical equipment: wrist brace,,2026-06-25,2026-12-31,2026-06-25
+AU-26154,WC26-04083,Corran Diagnostic Imaging,52-3304871,diagnostic imaging,,2026-07-01,2026-12-31,2026-07-01
+AU-26165,WC26-04083,Severn Ridge Orthopaedics,52-3817406,orthopaedic care,,2026-07-01,2026-12-31,2026-07-01
+AU-26176,WC26-04083,Tri-Hollow Medical Supply,52-5561290,durable medical equipment: knee brace,,2026-07-01,2026-12-31,2026-07-01
+AU-26187,WC26-04083,Linthwaite Motion PT,52-6038812,physical therapy,10,2026-07-27,2026-12-31,2026-07-27
+AU-26198,WC26-04104,Aldgrove Imaging Center,52-7720154,diagnostic imaging,,2026-07-07,2026-12-31,2026-07-07
+AU-26209,WC26-04104,Pembry Home Medical,52-2275043,durable medical equipment: TENS unit,,2026-07-07,2026-12-31,2026-07-07
+AU-26220,WC26-04104,Severn Ridge Orthopaedics,52-3817406,orthopaedic care,,2026-07-07,2026-12-31,2026-07-07
+AU-26231,WC26-04104,Tolliver Spine and Pain,52-2964018,pain management,,2026-07-07,2026-12-31,2026-07-07
+AU-26242,WC26-04117,Aldgrove Imaging Center,52-7720154,diagnostic imaging,,2026-07-21,2026-12-31,2026-07-21
+AU-26253,WC26-04117,Severn Ridge Orthopaedics,52-3817406,orthopaedic care,,2026-07-21,2026-12-31,2026-07-21
+AU-26264,WC26-04117,St. Aubrey Medical Center,52-0716649,emergency treatment,,2026-07-21,2026-07-21,2026-07-21
+AU-26275,WC26-04117,Marrowfield Rehab Group,52-1187365,physical therapy,10,2026-08-24,2026-12-31,2026-08-24
+AU-26286,WC26-04142,Aldgrove Imaging Center,52-7720154,diagnostic imaging,,2026-07-14,2026-12-31,2026-07-14
+AU-26297,WC26-04142,Greystoke Orthopedic Group,52-6620418,orthopaedic care,,2026-07-14,2026-12-31,2026-07-14
+AU-26308,WC26-04142,Marrowfield Rehab Group,52-1187365,physical therapy,10,2026-07-27,2026-12-31,2026-07-27
+AU-26319,WC26-04169,Easterbrook Occupational Health,52-1830962,occupational medicine,,2026-07-16,2026-12-31,2026-07-16
+AU-26330,WC26-04169,Pembry Home Medical,52-2275043,durable medical equipment: TENS unit,,2026-07-16,2026-12-31,2026-07-16
+AU-26341,WC26-04169,St. Aubrey Medical Center,52-0716649,emergency treatment,,2026-07-16,2026-07-16,2026-07-16
+AU-26352,WC26-04169,Wexcombe Physical Therapy,52-4410937,physical therapy,10,2026-07-27,2026-12-31,2026-07-27
+AU-26363,WC26-04185,Greystoke Orthopedic Group,52-6620418,orthopaedic care,,2026-07-22,2026-12-31,2026-07-22
+AU-26374,WC26-04185,Tri-Hollow Medical Supply,52-5561290,durable medical equipment: knee brace,,2026-07-22,2026-12-31,2026-07-22
+AU-26385,WC26-04208,Greystoke Orthopedic Group,52-6620418,orthopaedic care,,2026-07-28,2026-12-31,2026-07-28
+AU-26396,WC26-04208,Halbrook Pain Management,52-9046613,pain management,,2026-08-10,2026-12-31,2026-08-10
+AU-26407,WC26-04208,Wexcombe Physical Therapy,52-4410937,physical therapy,12,2026-08-12,2026-12-31,2026-08-12
+AU-26418,WC26-04233,Greystoke Orthopedic Group,52-6620418,orthopaedic care,,2026-07-29,2026-12-31,2026-07-29
+AU-26429,WC26-04233,St. Aubrey Medical Center,52-0716649,emergency treatment,,2026-07-29,2026-07-29,2026-07-29
+AU-26440,WC26-04257,Corran Diagnostic Imaging,52-3304871,diagnostic imaging,,2026-08-03,2026-12-31,2026-08-03
+AU-26451,WC26-04257,Easterbrook Occupational Health,52-1830962,occupational medicine,,2026-08-03,2026-12-31,2026-08-03
+AU-26462,WC26-04279,Quillan Bone and Joint,52-4097721,orthopaedic care,,2026-08-04,2026-12-31,2026-08-04
+AU-26473,WC26-04279,Tolliver Spine and Pain,52-2964018,pain management,,2026-08-04,2026-12-31,2026-08-04
+AU-26484,WC26-04296,Quillan Bone and Joint,52-4097721,orthopaedic care,,2026-08-06,2026-12-31,2026-08-06
+AU-26495,WC26-04296,Marrowfield Rehab Group,52-1187365,physical therapy,12,2026-08-16,2026-12-31,2026-08-16
+AU-26506,WC26-04318,Aldgrove Imaging Center,52-7720154,diagnostic imaging,,2026-08-07,2026-12-31,2026-08-07
+AU-26517,WC26-04318,Quillan Bone and Joint,52-4097721,orthopaedic care,,2026-08-07,2026-12-31,2026-08-07
+AU-26528,WC26-04318,St. Aubrey Medical Center,52-0716649,emergency treatment,,2026-08-07,2026-08-07,2026-08-07
+AU-26539,WC26-04318,Marrowfield Rehab Group,52-1187365,physical therapy,10,2026-08-17,2026-12-31,2026-08-17
+AU-26550,WC26-04337,Easterbrook Occupational Health,52-1830962,occupational medicine,,2026-08-10,2026-12-31,2026-08-10
+AU-26561,WC26-04337,Tolliver Spine and Pain,52-2964018,pain management,,2026-08-10,2026-12-31,2026-08-10
+AU-26572,WC26-04337,Tri-Hollow Medical Supply,52-5561290,durable medical equipment: TENS unit,,2026-08-10,2026-12-31,2026-08-10
+AU-26583,WC26-04337,Marrowfield Rehab Group,52-1187365,physical therapy,8,2026-08-20,2026-12-31,2026-08-20
+AU-26594,WC26-04351,Aldgrove Imaging Center,52-7720154,diagnostic imaging,,2026-08-11,2026-12-31,2026-08-11
+AU-26605,WC26-04351,Severn Ridge Orthopaedics,52-3817406,orthopaedic care,,2026-08-11,2026-12-31,2026-08-11
+AU-26616,WC26-04351,St. Aubrey Medical Center,52-0716649,emergency treatment,,2026-08-11,2026-08-11,2026-08-11
+AU-26627,WC26-04351,Ravenmoor Surgery Center,52-3378054,surgery: right shoulder arthroscopy,,2026-09-01,2026-10-31,2026-09-01
+AU-26638,WC26-04374,Quillan Bone and Joint,52-4097721,orthopaedic care,,2026-08-13,2026-12-31,2026-08-13
+AU-26649,WC26-04374,Wexcombe Physical Therapy,52-4410937,physical therapy,12,2026-08-23,2026-12-31,2026-08-23
+AU-26660,WC26-04390,Quillan Bone and Joint,52-4097721,orthopaedic care,,2026-07-09,2026-12-31,2026-07-09
+AU-26671,WC26-04390,Halbrook Pain Management,52-9046613,pain management,,2026-08-01,2026-12-31,2026-08-01
+AU-26682,WC26-04390,Marrowfield Rehab Group,52-1187365,physical therapy,8,2026-08-10,2026-12-31,2026-08-10
+AU-26693,WC26-04412,Aldgrove Imaging Center,52-7720154,diagnostic imaging,,2026-08-14,2026-12-31,2026-08-14
+AU-26704,WC26-04412,Quillan Bone and Joint,52-4097721,orthopaedic care,,2026-08-14,2026-12-31,2026-08-14
+AU-26715,WC26-04412,St. Aubrey Medical Center,52-0716649,emergency treatment,,2026-08-14,2026-08-14,2026-08-14
+AU-26726,WC26-04412,Tri-Hollow Medical Supply,52-5561290,durable medical equipment: TENS unit,,2026-08-14,2026-12-31,2026-08-14
+AU-26737,WC26-04412,Marrowfield Rehab Group,52-1187365,physical therapy,12,2026-08-24,2026-12-31,2026-08-24
+AU-26748,WC26-04438,Quillan Bone and Joint,52-4097721,orthopaedic care,,2026-08-17,2026-12-31,2026-08-17
+AU-26759,WC26-04466,Easterbrook Occupational Health,52-1830962,occupational medicine,,2026-06-24,2026-12-31,2026-06-24
+AU-26770,WC26-04466,Tri-Hollow Medical Supply,52-5561290,durable medical equipment: TENS unit,,2026-07-01,2026-12-31,2026-07-01
+AU-26781,WC26-04466,Wexcombe Physical Therapy,52-4410937,physical therapy,10,2026-08-03,2026-12-31,2026-08-03
+AU-26792,WC26-04481,Quillan Bone and Joint,52-4097721,orthopaedic care,,2026-08-18,2026-12-31,2026-08-18
+AU-26803,WC26-04481,Linthwaite Motion PT,52-6038812,physical therapy,8,2026-08-28,2026-12-31,2026-08-28
+AU-26814,WC26-04502,Greystoke Orthopedic Group,52-6620418,orthopaedic care,,2026-07-30,2026-12-31,2026-07-30
+AU-26825,WC26-04502,Pembry Home Medical,52-2275043,durable medical equipment: wrist brace,,2026-08-03,2026-12-31,2026-08-03
+AU-26836,WC26-04502,Fallowmere Neurology Associates,52-8812336,neurology,,2026-08-15,2026-12-31,2026-08-15
+AU-26847,WC26-04527,Greystoke Orthopedic Group,52-6620418,orthopaedic care,,2026-08-20,2026-12-31,2026-08-20
+AU-26858,WC26-04527,St. Aubrey Medical Center,52-0716649,emergency treatment,,2026-08-20,2026-08-20,2026-08-20
+AU-26869,WC26-04573,Aldgrove Imaging Center,52-7720154,diagnostic imaging,,2026-07-02,2026-12-31,2026-07-02
+AU-26880,WC26-04573,Greystoke Orthopedic Group,52-6620418,orthopaedic care,,2026-07-02,2026-12-31,2026-07-02
+AU-26891,WC26-04573,Quillan Bone and Joint,52-4097721,surgery: left knee arthroscopy,,2026-08-20,2026-10-31,2026-08-20
+AU-26902,WC26-04618,Easterbrook Occupational Health,52-1830962,occupational medicine,,2026-08-12,2026-12-31,2026-08-12
+AU-26913,WC26-04618,Linthwaite Motion PT,52-6038812,physical therapy,12,2026-08-17,2026-12-31,2026-08-17
+AU-26924,WC26-04011,Wexcombe Physical Therapy,52-4410937,physical therapy,6,2026-08-01,2026-12-31,2026-08-20

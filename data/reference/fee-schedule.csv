@@ -1,0 +1,36 @@
+procedure_code,modifier,description,fee_schedule_amount,per
+E0730,NU,"TENS unit, four or more leads, new equipment",420.00,service
+E0730,RR,"TENS unit, four or more leads, monthly",68.00,month
+L1832,NU,"Knee orthosis, adjustable joint, prefabricated",742.50,service
+L3807,NU,"Wrist hand finger orthosis, prefabricated",126.40,service
+PX100,,"Injection or aspiration, intermediate joint",156.20,service
+PX110,,"Injection or aspiration, major joint",210.00,service
+PX120,,Arthroscopic rotator cuff repair (surgeon),2980.00,service
+PX120,SG,Arthroscopic rotator cuff repair (surgery center facility),4215.00,service
+PX130,,Knee arthroscopy with meniscectomy (surgeon),1750.00,service
+PX140,,"X-ray cervical spine, 2 or 3 views",64.30,service
+PX150,,"X-ray lumbar spine, 2 or 3 views",70.40,service
+PX160,,"X-ray lumbar spine, 4 or more views",150.00,service
+PX170,,MRI cervical spine without contrast,1120.80,service
+PX180,,MRI lumbar spine without contrast,1150.40,service
+PX190,,"X-ray shoulder, 2 or more views",62.15,service
+PX200,,"X-ray wrist, 3 or more views",58.90,service
+PX210,,CT upper extremity without contrast,250.00,service
+PX220,,MRI upper extremity joint without contrast,1086.25,service
+PX230,,"X-ray knee, 3 views",66.80,service
+PX240,,"X-ray ankle, 3 or more views",61.75,service
+PX250,,MRI lower extremity joint without contrast,1064.90,service
+PX260,,"Needle EMG, each extremity",500.00,service
+PX270,,"Therapeutic exercise, each 15 minutes",48.00,15 minutes
+PX280,,"Manual therapy, each 15 minutes",44.50,15 minutes
+PX290,,"PT evaluation, low complexity",118.60,service
+PX300,,"PT evaluation, moderate complexity",132.75,service
+PX320,,"Therapeutic activities, each 15 minutes",40.00,15 minutes
+PX330,,"Office visit, new patient, low complexity",168.40,service
+PX340,,"Office visit, new patient, moderate complexity",205.25,service
+PX350,,"Office visit, established patient, straightforward",96.20,service
+PX360,,"Office visit, established patient, low complexity",144.85,service
+PX360,TLV,"Office visit, established patient, low complexity, audio-video telehealth",144.85,service
+PX370,,"Office visit, established patient, moderate complexity",211.30,service
+PX380,,"Office consultation, moderate complexity",380.00,service
+PX390,,"Emergency department visit, moderate severity (facility)",312.60,service

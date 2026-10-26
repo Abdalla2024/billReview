@@ -1,0 +1,23 @@
+billing_provider,billing_tin,provider_type,network_status,rendering_provider,rendering_npi,network_since
+Aldgrove Imaging Center,52-7720154,diagnostic imaging,out_of_network,Aldgrove Imaging Center,1851306627,
+Corran Diagnostic Imaging,52-3304871,diagnostic imaging,in_network,Corran Diagnostic Imaging,1194027736,2024-01-01
+Easterbrook Occupational Health,52-1830962,occupational medicine,in_network,"Noel Whitfield, MD",1831094467,2024-01-01
+Easterbrook Occupational Health,52-1830962,occupational medicine,in_network,"Priyanka Desai, MD",1356208819,2024-01-01
+Fallowmere Neurology Associates,52-8812336,neurology,in_network,"Ruth Calder, MD",1548803217,2024-01-01
+Greystoke Orthopedic Group,52-6620418,orthopaedic group,out_of_network,"Samuel Achebe, MD",1679042235,
+Greystoke Orthopedic Group,52-6620418,orthopaedic group,out_of_network,"Irene Castell, MD",1912650384,
+Halbrook Pain Management,52-9046613,pain management,out_of_network,"Victor Lund, MD",1295814470,
+Linthwaite Motion PT,52-6038812,physical therapy,out_of_network,"Corinne Vale, DPT",1720648391,
+Marrowfield Rehab Group,52-1187365,physical therapy,in_network,"Tobias Renner, DPT",1467730182,2024-01-01
+Marrowfield Rehab Group,52-1187365,physical therapy,in_network,"Asha Pruitt, DPT",1619285540,2024-01-01
+Pembry Home Medical,52-2275043,durable medical equipment,in_network,Pembry Home Medical,1386719405,2024-01-01
+Quillan Bone and Joint,52-4097721,orthopaedic group,in_network,"Dominic Ferrante, MD",1063529948,2024-01-01
+Quillan Bone and Joint,52-4097721,orthopaedic group,in_network,"Hanna Brook, MD",1225371806,2024-01-01
+Ravenmoor Surgery Center,52-3378054,ambulatory surgery center,out_of_network,Ravenmoor Surgery Center,1407261938,
+Severn Ridge Orthopaedics,52-3817406,orthopaedic group,out_of_network,"Anika Rao, MD",1043827715,
+Severn Ridge Orthopaedics,52-3817406,orthopaedic group,out_of_network,"Paul Whitcombe, MD",1588204631,
+St. Aubrey Medical Center,52-0716649,hospital,out_of_network,St. Aubrey Medical Center,1508837025,
+Tolliver Spine and Pain,52-2964018,pain management,in_network,"Lena Okonjo, MD",1275093318,2026-08-15
+Tri-Hollow Medical Supply,52-5561290,durable medical equipment,out_of_network,Tri-Hollow Medical Supply,1730582214,
+Wexcombe Physical Therapy,52-4410937,physical therapy,out_of_network,"Grant Ivers, DPT",1336741209,
+Wexcombe Physical Therapy,52-4410937,physical therapy,out_of_network,"Mira Haldane, DPT",1902415573,
