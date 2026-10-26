@@ -31,7 +31,7 @@ Outputs in `out/<month>/`:
 | `review-summary.md` | Total at the top, dollars per action, an explanation per group of lines, rule-12 questions, line accounting, extraction checks |
 | `all-lines.csv` | Every input line with its verdict (flagged or not), so every line is accounted for |
 | `paper-extraction.csv` | Every value read from the scans, with page, row and cross-check results |
-| `approved-lines.csv`, `approval-log.json` | Written only when the supervisor approves on the review page (who, when, each accept/edit/reject with a reason) |
+| `approvals/approved-lines-<time>.csv`, `approvals/approval-log-<time>.json` | Written only when the supervisor approves on the review page (who, when, each accept/edit/reject with a reason); each approval adds new files and never overwrites earlier ones |
 
 To correct an OCR misread, edit `paper-extraction.csv` and re-run with `--paper-extraction <file>`.
 

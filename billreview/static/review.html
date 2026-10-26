@@ -64,6 +64,12 @@ button.primary:disabled { opacity: .5; cursor: not-allowed; }
 .sec { padding: 4px 18px 14px; }
 .sec li { font-size: 13px; margin: 3px 0; }
 .also { font-size: 12.5px; color: var(--muted); }
+.q { background: var(--rr-bg); border-left: 3px solid var(--rr); padding: 8px 10px; margin: 8px 0; font-size: 13px; }
+.stale { background: var(--deny-bg); border-left: 3px solid var(--deny); padding: 8px 10px; margin: 8px 0; font-size: 13px; }
+table.cite { border-collapse: collapse; font-size: 12px; margin: 4px 0 10px; width: 100%; }
+table.cite td { border: 1px solid var(--line); padding: 3px 6px; vertical-align: top; }
+table.cite td:first-child { color: var(--muted); white-space: nowrap; width: 1%; }
+.cite-src { font-size: 12.5px; font-weight: 600; margin-top: 6px; }
 </style>
 </head>
 <body>
@@ -73,7 +79,7 @@ button.primary:disabled { opacity: .5; cursor: not-allowed; }
     <div class="label">Synthetic data · recommendations only</div>
   </div>
   <div class="totals" id="totals"></div>
-  <div class="banner">All dollar figures are <strong>suspected overpayments pending human review</strong>, not realized savings. This tool does not pay, deny, hold or change anything in any system. Approving writes <code>approved-lines.csv</code> and an audit log to the output folder only.</div>
+  <div class="banner">All dollar figures are <strong>suspected overpayments pending human review</strong>, not realized savings. This tool does not pay, deny, hold or change anything in any system. Approving writes a new <code>approvals/approved-lines-&lt;time&gt;.csv</code> and audit log in the output folder only; earlier approvals are kept.</div>
 </header>
 <main>
   <section class="panel">
@@ -94,7 +100,8 @@ button.primary:disabled { opacity: .5; cursor: not-allowed; }
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const money = n => "$" + Number(n).toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2});
-let DATA, decisions = {}, current = null, filter = "all";
+let DATA, decisions = {}, current = null, filter = "all", staleIds = [];
+const sig = it => `${it.action}|${it.dollars_at_issue}|${it.reason}`;
 
 function effective(it) {
   const d = decisions[it.line_id] || {};
@@ -156,9 +163,12 @@ function renderDetail() {
       <div>Service</div><div>${esc(it.procedure_code)}${it.modifier ? " " + esc(it.modifier) : ""} × ${esc(it.units)} on ${esc(it.date_of_service)}, billed ${money(it.billed_charge)}, received ${esc(it.received_date)}</div>
       <div>Source</div><div>${esc(it.source_ref)}</div>
     </div>
+    ${staleIds.includes(it.line_id) ? `<div class="stale">The recommendation for this line changed since your saved decision, so that decision was cleared. Review it again.</div>` : ""}
+    ${(it.questions || []).map(q => `<div class="q"><strong>Open question (rule 12):</strong> ${esc(q)}</div>`).join("")}
     <h3>Evidence</h3><div class="evidence">${evidenceHtml(it.evidence)}</div>
-    ${it.note ? `<h3>Treatment note ${esc(it.note.note_id)}</h3><pre class="rec">${esc(it.note.text)}</pre>` : ""}
     ${it.source === "paper" ? `<h3>Scanned page ${it.page} (row highlighted) — check the values read</h3><div class="scan" id="scan"><img src="/evidence/page-${String(it.page).padStart(2, "0")}.png" alt="scan of page ${it.page}"><div class="hl" id="hl"></div></div>` : ""}
+    ${(it.cited || []).length ? `<h3>Cited records (as they are in the source files)</h3>${it.cited.map(c => `<div class="cite-src">${esc(c.source)}</div><table class="cite">${Object.entries(c.row).filter(([k, v]) => v !== "" && v !== null).map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join("")}</table>`).join("")}` : ""}
+    ${it.note ? `<h3>Treatment note ${esc(it.note.note_id)}</h3><pre class="rec">${esc(it.note.text)}</pre>` : ""}
     <h3>Source record${it.source === "paper" ? " (as read from the scan)" : " (bills.csv)"}</h3><pre class="rec">${esc(rec)}</pre>
     <div class="decide">
       <h3 style="margin-top:0">Your decision</h3>
@@ -178,7 +188,7 @@ function renderDetail() {
   }
   const save = () => {
     const dec = (document.querySelector('input[name="dec"]:checked') || {}).value;
-    const nd = {decision: dec, note: $("#eNote").value};
+    const nd = {decision: dec, note: $("#eNote").value, rec: sig(it)};
     if (dec === "edit") Object.assign(nd, {action: $("#eAction").value, dollars_at_issue: $("#eDollars").value, reason: $("#eReason").value});
     decisions[it.line_id] = nd; persist(); renderTotals(); renderList();
   };
@@ -204,7 +214,7 @@ $("#approveBtn").onclick = async () => {
   const j = await r.json();
   if (!r.ok) { $("#msg").className = "msg err"; $("#msg").textContent = j.error; return; }
   $("#msg").className = "msg ok";
-  $("#msg").textContent = `Approved ${j.approved_lines} lines, ${money(j.total)} suspected overpayments pending action, at ${j.approved_at}. Wrote ${j.files.join(" and ")}. Nothing was sent to any system.`;
+  $("#msg").textContent = `Approved ${j.approved_lines} lines (${money(j.total)} suspected overpayments pending human review) at ${j.approved_at}. Wrote ${j.files.join(" and ")} in the output folder. Nothing was sent to any system.`;
 };
 $("#reviewer").oninput = persist;
 
@@ -212,6 +222,11 @@ $("#reviewer").oninput = persist;
   DATA = await (await fetch("/review-data.json")).json();
   const draft = await (await fetch("/api/draft")).json();
   decisions = draft.decisions || {}; $("#reviewer").value = draft.reviewer || "";
+  for (const it of DATA.items) {
+    const d = decisions[it.line_id];
+    if (d && d.rec !== sig(it)) { delete decisions[it.line_id]; staleIds.push(it.line_id); }
+  }
+  for (const id of Object.keys(decisions)) if (!DATA.items.some(i => i.line_id === id)) delete decisions[id];
   $("#month").textContent = "· month " + DATA.month;
   renderTotals(); renderFilters(); renderList(); renderExtra();
   const h = decodeURIComponent(location.hash.slice(1));

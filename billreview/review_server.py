@@ -3,8 +3,8 @@
     python -m billreview.review_server out/2026-09 [--port 8765]
 
 Serves on 127.0.0.1 only. The supervisor inspects the evidence for each flagged line,
-accepts, edits or rejects it, and approves the list. Approval writes two files into the
-output folder (approved-lines.csv and approval-log.json) and nothing else: no payment,
+accepts, edits or rejects it, and approves the list. Each approval writes two new files into
+<out>/approvals/ (approved-lines-<time>.csv and approval-log-<time>.json) and nothing else: no payment,
 denial or change is sent to any other system.
 """
 import argparse
@@ -12,11 +12,17 @@ import csv
 import json
 import re
 from datetime import datetime, timezone
+from decimal import Decimal
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 STATIC = Path(__file__).parent / "static" / "review.html"
 ACTIONS = {"deny", "reduce", "request_records"}
+
+
+def sig(item):
+    """What a decision was made against; a re-run that changes it invalidates the decision."""
+    return f"{item['action']}|{item['dollars_at_issue']}|{item['reason']}"
 DECISIONS = {"accept", "edit", "reject"}
 
 
@@ -79,6 +85,10 @@ def make_handler(out_dir):
         if missing:
             raise ValueError(f"{len(missing)} lines have no decision yet: {', '.join(missing[:5])}")
         rows, log = [], []
+        stale = [lid for lid, item in items.items() if decisions[lid].get("rec") not in (None, sig(item))]
+        if stale:
+            raise ValueError(f"The recommendation changed since these decisions were made; review again: "
+                             f"{', '.join(stale[:5])}")
         for lid, item in items.items():
             d = decisions[lid]
             entry = {"line_id": lid, "decision": d["decision"], "note": d.get("note", ""),
@@ -96,26 +106,34 @@ def make_handler(out_dir):
                 raise ValueError(f"{lid}: action must be deny, reduce or request_records")
             if not re.fullmatch(r"\d+(\.\d{1,2})?", str(dollars)):
                 raise ValueError(f"{lid}: dollars must be a number with up to two decimals")
-            dollars = f"{float(dollars):.2f}"
+            dollars = f"{Decimal(str(dollars)):.2f}"
             if d["decision"] == "edit" and not d.get("note", "").strip():
                 raise ValueError(f"{lid}: give a reason for the edit.")
             entry["approved"] = {"action": action, "dollars_at_issue": dollars, "reason": reason}
             log.append(entry)
             rows.append([lid, reason, dollars, item["evidence"], action])
         stamp = datetime.now(timezone.utc).isoformat(timespec="seconds")
-        with open(out_dir / "approved-lines.csv", "w", newline="") as f:
+        # every approval is kept: earlier approval files are never overwritten
+        tag = stamp.replace(":", "").replace("-", "").replace("+0000", "Z")
+        approvals = out_dir / "approvals"
+        approvals.mkdir(exist_ok=True)
+        csv_path, log_path = approvals / f"approved-lines-{tag}.csv", approvals / f"approval-log-{tag}.json"
+        if csv_path.exists() or log_path.exists():
+            raise ValueError("An approval was saved in this same second; wait a moment and approve again.")
+        with open(csv_path, "w", newline="") as f:
             w = csv.writer(f)
             w.writerow(["line_id", "reason", "dollars_at_issue", "evidence", "action"])
             w.writerows(rows)
-        total = sum(float(r[2]) for r in rows)
-        (out_dir / "approval-log.json").write_text(json.dumps({
+        total = sum((Decimal(r[2]) for r in rows), Decimal("0"))
+        log_path.write_text(json.dumps({
             "approved_by": reviewer, "approved_at": stamp, "month": data["month"],
             "approved_lines": len(rows), "rejected_lines": len(items) - len(rows),
             "approved_total_dollars_at_issue": f"{total:.2f}",
+            "tool_total_dollars_at_issue": data["total"],
             "label": "suspected overpayments pending human review; recommendations only, nothing sent to any system",
             "decisions": log}, indent=1))
         return {"ok": True, "approved_lines": len(rows), "total": f"{total:.2f}", "approved_at": stamp,
-                "files": ["approved-lines.csv", "approval-log.json"]}
+                "files": [f"approvals/{csv_path.name}", f"approvals/{log_path.name}"]}
 
     return Handler
 

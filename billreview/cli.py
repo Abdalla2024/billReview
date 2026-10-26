@@ -69,12 +69,52 @@ def run(data_dir, month=None, out_dir=None, paper_extraction=None):
     _, problems = verify(out_dir, data_dir, month_dir)
     accounting["evidence_problems"] = problems
     total = report.write_summary(verdicts, review.questions, rows, accounting, out_dir / "review-summary.md", month)
-    write_review_data(verdicts, review.questions, rows, accounting, out_dir, month, total)
+    write_review_data(verdicts, review.questions, rows, accounting, out_dir, month, total, ref, notes)
     return verdicts, review.questions, accounting, total, out_dir
 
 
-def write_review_data(verdicts, questions, rows, accounting, out_dir, month, total):
+def cited_records(evidence, ref, lines_by_id, notes):
+    """The source rows an evidence string cites, so the reviewer sees the records, not just the text."""
+    out = []
+
+    def add(source, row):
+        rec = {"source": source, "row": {k: v for k, v in row.items() if k not in INTERNAL
+                                         and not isinstance(v, (list, dict))}}
+        if rec not in out:
+            out.append(rec)
+
+    for cn in re.findall(r"claims\.csv (WC\d\d-\d{5})", evidence):
+        if cn in ref.claims:
+            add(f"claims.csv {cn}", ref.claims[cn])
+    for code, mod in re.findall(r"fee-schedule\.csv (\w+)(?: (\w\w))? [\d.]+ per", evidence):
+        if (code, mod) in ref.fees:
+            add(f"fee-schedule.csv {code} {mod}".strip(), ref.fees[(code, mod)])
+    for tin in re.findall(r"providers\.csv .+? TIN (\d\d-\d{7})", evidence):
+        for p in ref.providers:
+            if p["billing_tin"] == tin:
+                add(f"providers.csv {tin} / NPI {p['rendering_npi']}", p)
+    for aid in re.findall(r"\b(AU-\d+) \d+ visits", evidence):
+        for a in ref.authorizations:
+            if a["auth_id"] == aid:
+                add(f"authorizations.csv {aid}", a)
+    for nid in re.findall(r"note (TN-\d+)", evidence):
+        n = notes.get(nid)
+        if n:
+            add(f"treatment-notes.csv {nid}", n)
+    for cn in re.findall(r"rental-history\.csv (WC\d\d-\d{5})", evidence):
+        for r in ref.rentals:
+            if r["claim_number"] == cn:
+                add(f"rental-history.csv {cn}", r)
+    for lid in re.findall(r"(?:earlier visit|from bills\.csv) (HB\d{7}-\d\d)", evidence):
+        if lid in lines_by_id:
+            add(f"{lines_by_id[lid]['source_ref']}", lines_by_id[lid])
+    return out
+
+
+def write_review_data(verdicts, questions, rows, accounting, out_dir, month, total, ref, notes):
     """Data for the supervisor's review page (review.html reads review-data.json)."""
+    lines_by_id = {v["line"]["line_id"]: v["line"] for v in verdicts}
+    notes_by_id = {n["note_id"]: n for n in notes}
     items = []
     for v in verdicts:
         if not v["flagged"]:
@@ -92,6 +132,8 @@ def write_review_data(verdicts, questions, rows, accounting, out_dir, month, tot
             "record": {k: v for k, v in l.items() if k not in INTERNAL and not isinstance(v, (list, dict))},
             "note": (v["calc"] or {}).get("note_ev") and {
                 "note_id": v["calc"]["note_ev"]["note"]["note_id"], "text": v["calc"]["note_ev"]["note"]["note"]},
+            "cited": cited_records(v["evidence"], ref, lines_by_id, notes_by_id),
+            "questions": [q["question"] for q in questions if l["line_id"] in q["line_ids"]],
         })
     payload = {"month": month, "total": fmt(total), "accounting": accounting, "items": items,
                "questions": questions,

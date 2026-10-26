@@ -46,8 +46,8 @@ Rule 8: therapy visits past the approved number of visits for that claim and bil
 
 | line_id | claim | DOS | code | billed | dollars | why |
 |---|---|---|---|---:|---:|---|
-| HB2609928-01 | WC26-04618 | 2026-09-20 | PX320 | 190.00 | 160.00 | Therapy visit 15 is past the 12 approved visits (more than 2 past: deny) (rule 8) |
-| HB2609981-01 | WC26-04618 | 2026-09-22 | PX320 | 190.00 | 160.00 | Therapy visit 16 is past the 12 approved visits (more than 2 past: deny) (rule 8) |
+| HB2609928-01 | WC26-04618 | 2026-09-20 | PX320 | 190.00 | 160.00 | Therapy visit 15 is past the 12 approved visits; it is the 3rd visit past the approval (after the first 2 past: deny) (rule 8) |
+| HB2609981-01 | WC26-04618 | 2026-09-22 | PX320 | 190.00 | 160.00 | Therapy visit 16 is past the 12 approved visits; it is the 4th visit past the approval (after the first 2 past: deny) (rule 8) |
 
 ### request_records: rule 5 (1 lines, $1150.40)
 Rule 5: the line's body part (from its diagnosis code) is not on the claim's current accepted list. These are never denied for this reason: request records so the adjuster can decide compensability.
@@ -61,8 +61,8 @@ Rule 8: therapy visits past the approved number of visits for that claim and bil
 
 | line_id | claim | DOS | code | billed | dollars | why |
 |---|---|---|---|---:|---:|---|
-| HB2609958-01 | WC26-04618 | 2026-09-18 | PX320 | 190.00 | 160.00 | Therapy visit 14 is past the 12 approved visits (1st or 2nd visit past: request records) (rule 8) |
-| HB2609969-01 | WC26-04618 | 2026-09-16 | PX320 | 190.00 | 160.00 | Therapy visit 13 is past the 12 approved visits (1st or 2nd visit past: request records) (rule 8) |
+| HB2609958-01 | WC26-04618 | 2026-09-18 | PX320 | 190.00 | 160.00 | Therapy visit 14 is past the 12 approved visits; it is the 2nd visit past the approval (first 2 past: request records) (rule 8) |
+| HB2609969-01 | WC26-04618 | 2026-09-16 | PX320 | 190.00 | 160.00 | Therapy visit 13 is past the 12 approved visits; it is the 1st visit past the approval (first 2 past: request records) (rule 8) |
 
 ### Reduce: billed above the provider's rate (rule 6) (5 lines, $614.75)
 Reduced to the allowed amount: the fee schedule amount for the code and modifier, at 92% when the billing tax ID is in network on the date of service and 100% when not, rounded per unit, times the units billed or the units the therapy note supports when fewer, never more than the billed charge.

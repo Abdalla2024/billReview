@@ -182,16 +182,16 @@ HB2609904-01,electronic,bills.csv line_id HB2609904-01,WC26-04374,2026-09-07,PX1
 HB2609904-02,electronic,bills.csv line_id HB2609904-02,WC26-04374,2026-09-07,PX350,,1,85.85,85.85,not flagged,,
 HB2609911-01,electronic,bills.csv line_id HB2609911-01,WC26-04412,2026-09-07,PX350,,1,76.11,76.11,not flagged,,
 HB2609922-01,electronic,bills.csv line_id HB2609922-01,WC26-04573,2026-09-08,PX130,,1,1750.00,1610.00,reduce,140.00,Reduce to allowed amount: billed above the provider's rate (rule 6)
-HB2609928-01,electronic,bills.csv line_id HB2609928-01,WC26-04618,2026-09-20,PX320,,4,190.00,160.00,deny,160.00,Therapy visit 15 is past the 12 approved visits (more than 2 past: deny) (rule 8)
+HB2609928-01,electronic,bills.csv line_id HB2609928-01,WC26-04618,2026-09-20,PX320,,4,190.00,160.00,deny,160.00,Therapy visit 15 is past the 12 approved visits; it is the 3rd visit past the approval (after the first 2 past: deny) (rule 8)
 HB2609942-01,electronic,bills.csv line_id HB2609942-01,WC26-04438,2026-09-10,PX110,,1,173.88,173.88,not flagged,,
 HB2609947-01,electronic,bills.csv line_id HB2609947-01,WC26-04036,2026-08-25,PX140,,1,54.00,54.00,not flagged,,
 HB2609951-01,electronic,bills.csv line_id HB2609951-01,WC26-04527,2026-09-14,PX370,,1,211.30,211.30,not flagged,,
 HB2609953-01,electronic,bills.csv line_id HB2609953-01,WC26-04142,2026-08-08,PX360,TLV,1,138.00,138.00,not flagged,,
-HB2609958-01,electronic,bills.csv line_id HB2609958-01,WC26-04618,2026-09-18,PX320,,4,190.00,160.00,request_records,160.00,Therapy visit 14 is past the 12 approved visits (1st or 2nd visit past: request records) (rule 8)
+HB2609958-01,electronic,bills.csv line_id HB2609958-01,WC26-04618,2026-09-18,PX320,,4,190.00,160.00,request_records,160.00,Therapy visit 14 is past the 12 approved visits; it is the 2nd visit past the approval (first 2 past: request records) (rule 8)
 HB2609963-01,electronic,bills.csv line_id HB2609963-01,WC26-04618,2026-09-12,PX320,,4,160.00,160.00,not flagged,,
-HB2609969-01,electronic,bills.csv line_id HB2609969-01,WC26-04618,2026-09-16,PX320,,4,190.00,160.00,request_records,160.00,Therapy visit 13 is past the 12 approved visits (1st or 2nd visit past: request records) (rule 8)
+HB2609969-01,electronic,bills.csv line_id HB2609969-01,WC26-04618,2026-09-16,PX320,,4,190.00,160.00,request_records,160.00,Therapy visit 13 is past the 12 approved visits; it is the 1st visit past the approval (first 2 past: request records) (rule 8)
 HB2609976-01,electronic,bills.csv line_id HB2609976-01,WC26-04573,2026-09-22,PX360,,1,133.26,133.26,not flagged,,
-HB2609981-01,electronic,bills.csv line_id HB2609981-01,WC26-04618,2026-09-22,PX320,,4,190.00,160.00,deny,160.00,Therapy visit 16 is past the 12 approved visits (more than 2 past: deny) (rule 8)
+HB2609981-01,electronic,bills.csv line_id HB2609981-01,WC26-04618,2026-09-22,PX320,,4,190.00,160.00,deny,160.00,Therapy visit 16 is past the 12 approved visits; it is the 4th visit past the approval (after the first 2 past: deny) (rule 8)
 HB2609093-01,paper,paper-bills.pdf page 1 (bill HB2609093 line 01),WC26-03902,2026-06-07,PX240,,1,53.11,53.11,not flagged,,
 HB2609093-02,paper,paper-bills.pdf page 1 (bill HB2609093 line 02),WC26-03902,2026-06-07,PX330,,1,144.82,144.82,not flagged,,
 HB2609093-03,paper,paper-bills.pdf page 1 (bill HB2609093 line 03),WC26-03902,2026-06-20,PX360,,1,134.71,134.71,not flagged,,
