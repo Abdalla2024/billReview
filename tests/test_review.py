@@ -413,3 +413,37 @@ def test_paper_dx_takes_body_part_only_when_unambiguous(base):
     assert extract.to_bill_lines([row], ref, lines)[0]["body_part"] == "right shoulder"
     lines.append(dict(lines[0], line_id="HBX-01", diagnosis_code="S46.011A", body_part="left shoulder"))
     assert extract.to_bill_lines([row], ref, lines)[0]["body_part"] == ""
+
+
+TAMPERS = [
+    # (line_id, field, old, new, what the verifier must catch)
+    ("HB2609014-01", "evidence", "x 100% = 250.00/unit", "x 100% = 251.00/unit", "unit rate arithmetic"),
+    ("HB2609014-01", "evidence", "x 100% = 250.00/unit", "x 92% = 230.00/unit", "network percentage"),
+    ("HB2609014-01", "dollars_at_issue", "160.00", "170.00", "rule 11 dollars"),
+    ("HB2609695-01", "evidence", "note TN-5157", "note TN-5154", "note of another line"),
+    ("HB2609695-01", "evidence", "allowed 2 x 48.00 = 96.00", "allowed 3 x 48.00 = 144.00", "units without note support"),
+    ("HB2609969-01", "evidence", "visit 13 of claim", "visit 12 of claim", "visit number"),
+    ("HB2609969-01", "evidence", "= 12 approved", "= 14 approved", "approved total"),
+    ("HB2609823-01", "evidence", "NPI 1043827715 received", "NPI 1588204631 received", "earlier visit values"),
+    ("HB2609198-01", "evidence", "date_of_injury 2026-08-11", "date_of_injury 2026-08-01", "claim DOI"),
+    ("HB2609541-01", "evidence", "body part lumbar spine", "body part right shoulder", "body part"),
+    ("HB2609662-01", "evidence", "Dana Kowalczyk-Reyes DOB", "Dana Kowalczyk DOB", "claimant name"),
+    ("HB2609644-01", "evidence", "2 paid months", "3 paid months", "rental months"),
+]
+
+
+@pytest.mark.parametrize("line_id,field,old,new,what", TAMPERS, ids=[t[4] for t in TAMPERS])
+def test_verifier_catches_each_kind_of_wrong_figure(run, tmp_path, line_id, field, old, new, what):
+    import shutil
+    from billreview.verify import verify
+    shutil.copy(run["out"] / "paper-extraction.csv", tmp_path / "paper-extraction.csv")
+    rows = list(flagged(run).values())
+    row = next(r for r in rows if r["line_id"] == line_id)
+    assert old in row[field], (what, row[field])
+    row[field] = row[field].replace(old, new)
+    with open(tmp_path / "flagged-lines.csv", "w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=["line_id", "reason", "dollars_at_issue", "evidence", "action"])
+        w.writeheader()
+        w.writerows(rows)
+    _, problems = verify(tmp_path, DATA, MONTH)
+    assert problems and all(p.startswith(line_id) for p in problems), (what, problems)
