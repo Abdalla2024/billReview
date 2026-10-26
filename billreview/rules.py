@@ -38,6 +38,8 @@ _HM = re.compile(r"\b(\d{1,2}):(\d{2})\b")
 _HR_MIN = re.compile(r"\b(\d+)\s*(?:hr|hrs|hour|hours)\s*(?:and\s*)?(\d+)\s*(?:min|mins|minute|minutes)\b", re.I)
 _N_MIN = re.compile(r"\b(\d+)\s*-?\s*(?:min|mins|minute|minutes)\b", re.I)
 _MIN_N = re.compile(r"\bminutes?\s*:?\s*(\d+)\b", re.I)
+_RANGE = re.compile(r"\b\d+\s*(?:-|to)\s*\d+\s*(?:min|mins|minute|minutes)\b", re.I)
+_TIME_WORD = re.compile(r"\b(?:hours?|hrs?|minutes?|mins?)\b", re.I)
 
 
 def note_minutes(text):
@@ -47,6 +49,9 @@ def note_minutes(text):
     minutes word count; other numbers in the note (sets, reps, degrees, pounds) do not.
     If the note states two different totals it is ambiguous and returns None.
     """
+    rng = _RANGE.search(text)
+    if rng:  # "30-35 min" is a range, not one total
+        return None, rng.group(0)
     found = []
     for rx, conv in ((_HM, lambda m: int(m[1]) * 60 + int(m[2])),
                      (_HR_MIN, lambda m: int(m[1]) * 60 + int(m[2])),
@@ -56,6 +61,8 @@ def note_minutes(text):
             found.append((conv(m), m.group(0)))
         if found:
             break
+    if not found and _TIME_WORD.search(text):  # e.g. "one hour": time stated without a number we can read
+        return None, _TIME_WORD.search(text).group(0)
     values = {v for v, _ in found}
     if len(values) != 1:
         return None, (" / ".join(t for _, t in found) if found else "")
@@ -136,7 +143,7 @@ class Review:
             if note is not None:
                 minutes, said = note_minutes(note["note"])
                 if minutes is None and said:
-                    self.question([line["line_id"]], f"Note {note['note_id']} states more than one time "
+                    self.question([line["line_id"]], f"Note {note['note_id']} does not state one clear time "
                                   f"({said}); rule 4 needs one treatment-minutes figure, so it was not applied. "
                                   "Reviewer: read the note and decide the minutes.")
                 if minutes is not None:

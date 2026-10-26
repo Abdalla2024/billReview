@@ -64,7 +64,7 @@ def test_summary_total_at_very_top_matches_csv(run):
     rows = flagged(run).values()
     total = sum(Decimal(r["dollars_at_issue"]) for r in rows)
     first = (run["out"] / "review-summary.md").read_text().splitlines()[0]
-    assert first == f"# Total dollars at issue: ${total:.2f}"
+    assert first == f"# Total dollars at issue: ${total:.2f} (suspected overpayments pending human review)"
     text = (run["out"] / "review-summary.md").read_text()
     for action in ("deny", "request_records", "reduce"):
         part = sum(Decimal(r["dollars_at_issue"]) for r in rows if r["action"] == action)
@@ -320,7 +320,7 @@ def test_note_with_two_times_is_a_question_not_a_flag(base):
     notes = copy.deepcopy(notes)
     next(n for n in notes if n["note_id"] == "TN-5157")["note"] = "Ther ex 38 min. Manual 20 min."
     v, qs = questions_for(ref, copy.deepcopy(lines), notes, "HB2609695-01")
-    assert not v["HB2609695-01"]["flagged"] and any("more than one time" in q for q in qs)
+    assert not v["HB2609695-01"]["flagged"] and any("one clear time" in q for q in qs)
 
 
 def test_hyphenated_minutes():
@@ -447,3 +447,9 @@ def test_verifier_catches_each_kind_of_wrong_figure(run, tmp_path, line_id, fiel
         w.writerows(rows)
     _, problems = verify(tmp_path, DATA, MONTH)
     assert problems and all(p.startswith(line_id) for p in problems), (what, problems)
+
+
+@pytest.mark.parametrize("text", ["Ther ex 30-35 min.", "Ther ex for one hour.", "Session 10:30-11:15."])
+def test_unclear_times_are_not_guessed(text):
+    minutes, said = note_minutes(text)
+    assert minutes is None and said

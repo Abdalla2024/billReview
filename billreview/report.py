@@ -47,6 +47,32 @@ def _group_key(v):
     return v["action"], f"{v['action']}: rule {rule}"
 
 
+INTERPRETATIONS = [
+    "Provider's rate: the fee times 92% (in network) or 100% is rounded to the cent half-up, per unit, "
+    "then multiplied by the units. task.md does not name a rounding mode; it only matters at an exact half cent.",
+    "Rule 8: visits past the approved number are counted in date order; the first 2 such visits get "
+    "request_records and every later one is denied. A question is raised wherever counting by visit number "
+    "minus approved total would give a different action.",
+    "Rule 8: therapy lines on a bill that rule 1 says belongs to someone else are not counted as the "
+    "claimant's visits. A question is raised wherever counting them would change another line's action.",
+    "In network needs a network_since date on or before the date of service; an in_network provider with no "
+    "date is priced at 100% and raised as a question.",
+    "Rule 7: paid rental months come only from rental-history.csv (this month's rental lines are not added). "
+    "A TENS rental or purchase after 10 paid months is raised as a question, not flagged.",
+    "Rule 5: the line's body part must match an entry of the claim's accepted list exactly (ignoring case). "
+    "A paper line takes its body part from bills.csv only when that diagnosis code has one body part there.",
+    "Rule 4: a note with no minutes leaves rule 4 out (as written); a note with two different times, a missing "
+    "note or two matching notes is raised as a question and rule 4 is not applied.",
+    "Rule 11: when a stopped line's allowed amount cannot be computed (no fee entry or unknown tax ID), dollars "
+    "at issue are 0.00 with a question; the billed charge is never used instead.",
+    "A claim number not in claims.csv, or a line with a missing or unreadable field, is not reviewed or flagged "
+    "and is listed as a question.",
+    "Rule 3 tie-break on the same received date uses the higher line_id as text (HB2609823-01 > HB2609623-01).",
+    "When rule 4 and rule 6 both reduce a line, it is one reduce to the allowed amount (rate x note-supported "
+    "units, capped at the billed charge).",
+]
+
+
 GROUP_TEXT = {
     "1": "Rule 1: the claim number matches but the date of birth does not, so the bill belongs to someone "
          "else. Names are not used to match. Dollars at issue are what would otherwise be paid (allowed amount).",
@@ -71,7 +97,7 @@ def write_summary(verdicts, questions, extraction_rows, accounting, path, month)
         by_action[v["action"]][0] += v["dollars"]
         by_action[v["action"]][1] += 1
     out = []
-    out.append(f"# Total dollars at issue: ${fmt(total)}")
+    out.append(f"# Total dollars at issue: ${fmt(total)} (suspected overpayments pending human review)")
     out.append("")
     out.append(f"**{LABEL.capitalize()}.** Bill review month {month}: {len(flagged)} of "
                f"{accounting['total']} lines flagged. Nothing has been paid, denied or changed in any system; "
@@ -157,6 +183,11 @@ def write_summary(verdicts, questions, extraction_rows, accounting, path, month)
     else:
         out.append("")
         out.append(f"All {len(extraction_rows)} paper lines passed every cross-check.")
+    out.append("")
+    out.append("## Interpretations applied where task.md is silent")
+    out.append("Each is applied the same way every run; where a different reading would change a verdict this "
+               "month, the affected lines are listed under the questions above.")
+    out.extend(f"- {t}" for t in INTERPRETATIONS)
     out.append("")
     out.append("## What this tool does not do")
     out.append("It only reads files and recommends. It does not pay, deny, hold or change anything in any "

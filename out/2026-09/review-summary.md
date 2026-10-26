@@ -1,4 +1,4 @@
-# Total dollars at issue: $3656.00
+# Total dollars at issue: $3656.00 (suspected overpayments pending human review)
 
 **Suspected overpayments pending human review (not realized savings).** Bill review month 2026-09: 15 of 218 lines flagged. Nothing has been paid, denied or changed in any system; a bill review supervisor must approve this list before any action.
 
@@ -96,6 +96,20 @@ Reduced to the allowed amount: the fee schedule amount for the code and modifier
 Paper lines were read from the scans by local OCR (Tesseract). Each value was cross-checked: the line charges must add up to the form's total charge (box 28), the claim must exist, the rendering NPI must belong to the billing tax ID in the provider file, and the diagnosis code must appear in bills.csv (which gives the body part). Values and page/row are in `paper-extraction.csv`; the review page shows each page image beside the values read.
 
 All 25 paper lines passed every cross-check.
+
+## Interpretations applied where task.md is silent
+Each is applied the same way every run; where a different reading would change a verdict this month, the affected lines are listed under the questions above.
+- Provider's rate: the fee times 92% (in network) or 100% is rounded to the cent half-up, per unit, then multiplied by the units. task.md does not name a rounding mode; it only matters at an exact half cent.
+- Rule 8: visits past the approved number are counted in date order; the first 2 such visits get request_records and every later one is denied. A question is raised wherever counting by visit number minus approved total would give a different action.
+- Rule 8: therapy lines on a bill that rule 1 says belongs to someone else are not counted as the claimant's visits. A question is raised wherever counting them would change another line's action.
+- In network needs a network_since date on or before the date of service; an in_network provider with no date is priced at 100% and raised as a question.
+- Rule 7: paid rental months come only from rental-history.csv (this month's rental lines are not added). A TENS rental or purchase after 10 paid months is raised as a question, not flagged.
+- Rule 5: the line's body part must match an entry of the claim's accepted list exactly (ignoring case). A paper line takes its body part from bills.csv only when that diagnosis code has one body part there.
+- Rule 4: a note with no minutes leaves rule 4 out (as written); a note with two different times, a missing note or two matching notes is raised as a question and rule 4 is not applied.
+- Rule 11: when a stopped line's allowed amount cannot be computed (no fee entry or unknown tax ID), dollars at issue are 0.00 with a question; the billed charge is never used instead.
+- A claim number not in claims.csv, or a line with a missing or unreadable field, is not reviewed or flagged and is listed as a question.
+- Rule 3 tie-break on the same received date uses the higher line_id as text (HB2609823-01 > HB2609623-01).
+- When rule 4 and rule 6 both reduce a line, it is one reduce to the allowed amount (rate x note-supported units, capped at the billed charge).
 
 ## What this tool does not do
 It only reads files and recommends. It does not pay, deny, hold or change anything in any system, and it does not contact providers or claimants. Late arrival, bundling, modifier correctness and missing documentation are not checked (rule 9).

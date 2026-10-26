@@ -45,9 +45,13 @@ To correct an OCR misread, edit `paper-extraction.csv` and re-run with `--paper-
 - **Rules** ([billreview/rules.py](billreview/rules.py)): rules 1–12 as written in task.md, in plain Python with
   `Decimal` money. There is no model in the decision path. Precedence is deny, then request_records, then reduce.
   Dollars follow rule 11.
-- **Evidence self-check** ([billreview/verify.py](billreview/verify.py)): after each run, every record and value
-  cited in `flagged-lines.csv` (lines, notes and their quoted text, authorizations, fee entries, claim DOB/DOI,
-  provider status, rental months, billed amounts) is re-read from the source files and compared.
+- **Evidence self-check** ([billreview/verify.py](billreview/verify.py)): after each run, every record cited in
+  `flagged-lines.csv` is re-read from the source files, and every figure is recomputed independently of the rules
+  engine: unit rate and network %, allowed amount, rule-11 dollars, note ownership and units, visit numbers,
+  approved totals, the earlier visit in a duplicate, claim DOB/DOI, body part and rental months.
+- **Questions, not guesses** (rule 12): where task.md does not settle a case, the line is not flagged on that
+  alone and the question is written in the summary. Standing interpretations are listed at the end of
+  `review-summary.md`; open questions for the rehearsal are in [docs/rehearsal-questions.md](docs/rehearsal-questions.md).
 - **Review page** ([billreview/review_server.py](billreview/review_server.py)): binds to 127.0.0.1 only. It shows each
   flagged line's evidence, treatment note, source record and, for paper lines, the scanned page with the row
   highlighted. The supervisor accepts, edits or rejects each line (a reason is required to edit or reject), and
