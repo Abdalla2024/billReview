@@ -14,7 +14,7 @@ import cv2
 
 FIELDS = ["line_id", "bill_id", "page", "row", "received_date", "claim_number", "claimant_name",
           "claimant_dob", "billing_tin", "rendering_npi", "date_of_service", "procedure_code", "modifier",
-          "units", "billed_charge", "diagnosis_code", "form_total_charge", "ocr_checks", "ocr_raw"]
+          "units", "billed_charge", "diagnosis_code", "form_total_charge", "ocr_checks", "ocr_raw", "page_box"]
 
 
 def extract(pdf_path, ref, electronic, evidence_dir):
@@ -94,7 +94,8 @@ def write_extraction(rows, path):
         w = csv.DictWriter(f, fieldnames=FIELDS, extrasaction="ignore")
         w.writeheader()
         for r in rows:
-            w.writerow({**r, "ocr_checks": "; ".join(r["ocr_checks"]) or "ok"})
+            w.writerow({**r, "ocr_checks": "; ".join(r["ocr_checks"]) or "ok",
+                        "page_box": " ".join(map(str, r["box"])) if r.get("box") else ""})
 
 
 def read_extraction(path, ref, electronic):
@@ -104,7 +105,7 @@ def read_extraction(path, ref, electronic):
     for r in rows:
         r["page"], r["row"] = int(r["page"]), int(r["row"])
         r["ocr_checks"] = []
-        r["box"] = None
+        r["box"] = [int(v) for v in r.get("page_box", "").split()] or None
     validate(rows, ref, electronic)
     return rows
 

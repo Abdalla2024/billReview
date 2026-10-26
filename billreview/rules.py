@@ -173,11 +173,21 @@ class Review:
                 continue
             if line["claimant_dob"] != claim["claimant_dob"]:
                 belongs[line["line_id"]] = False
+                # context for the reviewer only (names never decide rule 1): whose DOB is on the bill?
+                others = [c for c in self.ref.claims.values() if c["claimant_dob"] == line["claimant_dob"]]
+                if others:
+                    ctx = "; bill DOB matches " + ", ".join(
+                        f"claims.csv {c['claim_number']} ({c['claimant_name']}, DOB {c['claimant_dob']})"
+                        for c in others)
+                else:
+                    ctx = "; bill DOB matches no claimant on file"
+                if line["source"] == "paper":
+                    ctx += "; DOB read from the scan: confirm on the page image"
                 self.flag(line, 1, "deny",
                           "Bill belongs to someone else: claim number matches but date of birth does not (rule 1)",
                           f"{line['source_ref']}: claim {line['claim_number']}, DOB on bill {line['claimant_dob']}"
                           f" (name on bill: {line['claimant_name']}); claims.csv {line['claim_number']}:"
-                          f" {claim['claimant_name']} DOB {claim['claimant_dob']}")
+                          f" {claim['claimant_name']} DOB {claim['claimant_dob']}{ctx}")
             else:
                 belongs[line["line_id"]] = True
         return belongs

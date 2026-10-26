@@ -137,6 +137,9 @@ def write_summary(verdicts, questions, extraction_rows, accounting, path, month)
                + (f" (of which {accounting['unreadable']} could not be reviewed; see questions)"
                   if accounting["unreadable"] else ""))
     out.append("- Every line and its verdict is in `all-lines.csv`.")
+    probs = accounting.get("evidence_problems", [])
+    out.append("- Evidence self-check: " + ("every record and value cited in flagged-lines.csv was re-read from the "
+               "source files and matches." if not probs else f"{len(probs)} problems: " + "; ".join(probs)))
     out.append("")
 
     out.append("## Paper bill extraction (review before approving)")

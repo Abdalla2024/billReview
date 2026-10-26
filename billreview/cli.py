@@ -4,8 +4,10 @@ import json
 from pathlib import Path
 
 from . import data, extract, report
+from .verify import verify
 from .rules import Review, fmt
 
+INTERNAL = {"source", "source_ref", "box", "body_part_ev", "ocr_raw", "ocr_checks"}
 REQUIRED = ["claim_number", "claimant_dob", "billing_tin", "rendering_npi", "date_of_service", "procedure_code",
             "units", "billed_charge", "received_date"]
 
@@ -49,6 +51,8 @@ def run(data_dir, month=None, out_dir=None, paper_extraction=None):
     assert len(verdicts) == accounting["total"]
     report.write_flagged(verdicts, out_dir / "flagged-lines.csv")
     report.write_all_lines(verdicts, out_dir / "all-lines.csv")
+    _, problems = verify(out_dir, data_dir, month_dir)
+    accounting["evidence_problems"] = problems
     total = report.write_summary(verdicts, review.questions, rows, accounting, out_dir / "review-summary.md", month)
     write_review_data(verdicts, review.questions, rows, accounting, out_dir, month, total)
     return verdicts, review.questions, accounting, total, out_dir
@@ -70,6 +74,9 @@ def write_review_data(verdicts, questions, rows, accounting, out_dir, month, tot
             "date_of_service": l["date_of_service"], "received_date": l["received_date"],
             "procedure_code": l["procedure_code"], "modifier": l["modifier"], "units": l["units"],
             "billed_charge": l["billed_charge"], "page": l.get("page"), "box": l.get("box"),
+            "record": {k: v for k, v in l.items() if k not in INTERNAL and not isinstance(v, (list, dict))},
+            "note": (v["calc"] or {}).get("note_ev") and {
+                "note_id": v["calc"]["note_ev"]["note"]["note_id"], "text": v["calc"]["note_ev"]["note"]["note"]},
         })
     payload = {"month": month, "total": fmt(total), "accounting": accounting, "items": items,
                "questions": questions,
@@ -90,7 +97,12 @@ def main():
     print(f"Reviewed {acc['total']} lines ({acc['electronic']} electronic, {acc['paper']} paper on "
           f"{acc['pages']} pages); flagged {len(flagged)}; {len(questions)} questions for the summary.")
     print(f"Total dollars at issue: ${fmt(total)} (suspected overpayments pending human review)")
+    problems = acc["evidence_problems"]
+    print(f"Evidence self-check: {'all cites match the source files' if not problems else str(len(problems)) + ' problems'}")
+    for p in problems:
+        print("  ", p)
     print(f"Wrote {out_dir}/flagged-lines.csv, review-summary.md, all-lines.csv, paper-extraction.csv")
+    print(f"Supervisor review: python -m billreview.review_server {out_dir}")
 
 
 if __name__ == "__main__":

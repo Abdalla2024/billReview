@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bill Review Approval</title>
+<style>
+:root {
+  --bg: #f6f7f9; --panel: #ffffff; --ink: #1d2433; --muted: #5b6475; --line: #dde1e8;
+  --accent: #2f5bd3; --deny: #b42318; --deny-bg: #fdecea; --rr: #9a6700; --rr-bg: #fff4d6;
+  --reduce: #1f6f43; --reduce-bg: #e6f4ec; --reject: #6b7280; --sel: #eef3ff;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: var(--ink); background: var(--bg); }
+header { background: var(--panel); border-bottom: 1px solid var(--line); padding: 14px 20px; }
+.banner { font-size: 12.5px; color: var(--muted); margin-top: 4px; }
+.totals { display: flex; gap: 22px; flex-wrap: wrap; align-items: baseline; margin-top: 8px; }
+.big { font-size: 26px; font-weight: 650; }
+.label { font-size: 12px; color: var(--muted); }
+.pill { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 12px; font-weight: 600; }
+.deny { color: var(--deny); background: var(--deny-bg); }
+.request_records { color: var(--rr); background: var(--rr-bg); }
+.reduce { color: var(--reduce); background: var(--reduce-bg); }
+.rejected { color: var(--reject); background: #eceef1; text-decoration: line-through; }
+main { display: grid; grid-template-columns: minmax(300px, 420px) 1fr; gap: 16px; padding: 16px 20px; }
+@media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
+.list { max-height: calc(100vh - 190px); overflow: auto; }
+.filters { display: flex; gap: 6px; padding: 10px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.filters button { border: 1px solid var(--line); background: #fff; border-radius: 6px; padding: 4px 9px; cursor: pointer; font-size: 12.5px; }
+.filters button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+.row { padding: 9px 12px; border-bottom: 1px solid var(--line); cursor: pointer; display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; }
+.row:hover { background: #fafbfc; }
+.row.sel { background: var(--sel); }
+.row .id { font-weight: 600; font-family: ui-monospace, Menlo, monospace; font-size: 13px; }
+.row .why { grid-column: 1 / 3; color: var(--muted); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row .status { font-size: 11.5px; color: var(--muted); }
+.detail { padding: 16px 18px; }
+.detail h2 { margin: 0 0 4px; font-size: 18px; font-family: ui-monospace, Menlo, monospace; }
+.kv { display: grid; grid-template-columns: max-content 1fr; gap: 3px 14px; font-size: 13px; margin: 10px 0; }
+.kv div:nth-child(odd) { color: var(--muted); }
+h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 18px 0 6px; }
+.evidence ul { margin: 4px 0 10px 18px; padding: 0; }
+.evidence li { margin: 2px 0; font-size: 13px; }
+.evidence .block { border-left: 3px solid var(--line); padding-left: 10px; margin-bottom: 8px; }
+pre.rec { background: #f8f9fb; border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; font-size: 12px; overflow: auto; white-space: pre-wrap; }
+.scan { position: relative; display: block; max-width: 100%; border: 1px solid var(--line); overflow: hidden; aspect-ratio: 1275 / 1000; }
+.scan img { display: block; max-width: 100%; }
+.scan .hl { position: absolute; border: 3px solid #e8590c; background: rgba(232, 89, 12, .08); pointer-events: none; }
+.decide { border-top: 1px solid var(--line); margin-top: 16px; padding-top: 12px; }
+.decide .opts { display: flex; gap: 8px; flex-wrap: wrap; }
+.decide label.opt { border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; cursor: pointer; }
+.decide label.opt.on { border-color: var(--accent); background: var(--sel); }
+.decide .edit { display: grid; grid-template-columns: max-content 1fr; gap: 6px 10px; margin-top: 10px; align-items: center; }
+input, select, textarea { font: inherit; padding: 5px 7px; border: 1px solid var(--line); border-radius: 5px; width: 100%; }
+textarea { min-height: 54px; }
+.approve { padding: 14px 18px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; border-top: 1px solid var(--line); }
+.approve input { max-width: 240px; }
+button.primary { background: var(--accent); color: #fff; border: 0; border-radius: 6px; padding: 8px 14px; font-weight: 600; cursor: pointer; }
+button.primary:disabled { opacity: .5; cursor: not-allowed; }
+.msg { font-size: 13px; }
+.msg.err { color: var(--deny); }
+.msg.ok { color: var(--reduce); }
+.sec { padding: 4px 18px 14px; }
+.sec li { font-size: 13px; margin: 3px 0; }
+.also { font-size: 12.5px; color: var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px">
+    <div><strong>Pre-payment bill review</strong> <span class="label" id="month"></span></div>
+    <div class="label">Synthetic data · recommendations only</div>
+  </div>
+  <div class="totals" id="totals"></div>
+  <div class="banner">All dollar figures are <strong>suspected overpayments pending human review</strong>, not realized savings. This tool does not pay, deny, hold or change anything in any system. Approving writes <code>approved-lines.csv</code> and an audit log to the output folder only.</div>
+</header>
+<main>
+  <section class="panel">
+    <div class="filters" id="filters"></div>
+    <div class="list" id="list"></div>
+  </section>
+  <section class="panel">
+    <div class="detail" id="detail"><p class="label">Select a flagged line to see its evidence.</p></div>
+    <div class="approve">
+      <input id="reviewer" placeholder="Reviewer name" autocomplete="name">
+      <button class="primary" id="approveBtn">Approve list</button>
+      <span class="msg" id="msg"></span>
+    </div>
+    <div class="sec" id="extra"></div>
+  </section>
+</main>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const money = n => "$" + Number(n).toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2});
+let DATA, decisions = {}, current = null, filter = "all";
+
+function effective(it) {
+  const d = decisions[it.line_id] || {};
+  if (d.decision === "reject") return null;
+  if (d.decision === "edit") return {action: d.action || it.action, dollars: d.dollars_at_issue ?? it.dollars_at_issue};
+  return {action: it.action, dollars: it.dollars_at_issue};
+}
+
+function renderTotals() {
+  const by = {deny: 0, request_records: 0, reduce: 0}; let tot = 0, decided = 0;
+  DATA.items.forEach(it => {
+    if ((decisions[it.line_id] || {}).decision) decided++;
+    const e = effective(it); if (!e) return;
+    const v = Number(e.dollars) || 0; by[e.action] = (by[e.action] || 0) + v; tot += v;
+  });
+  $("#totals").innerHTML =
+    `<div><div class="big">${money(tot)}</div><div class="label">total dollars at issue (suspected overpayments pending human review)</div></div>` +
+    Object.entries(by).map(([a, v]) => `<div><span class="pill ${a}">${a}</span> <strong>${money(v)}</strong></div>`).join("") +
+    `<div class="label">${DATA.items.length} flagged of ${DATA.accounting.total} lines · ${decided} decided · tool's original total ${money(DATA.total)}</div>`;
+}
+
+function renderFilters() {
+  const opts = ["all", "deny", "request_records", "reduce", "undecided"];
+  $("#filters").innerHTML = opts.map(o => `<button data-f="${o}" class="${o === filter ? "on" : ""}">${o}</button>`).join("");
+  $("#filters").querySelectorAll("button").forEach(b => b.onclick = () => { filter = b.dataset.f; renderFilters(); renderList(); });
+}
+
+function renderList() {
+  const items = DATA.items.filter(it => filter === "all" || (filter === "undecided" ? !(decisions[it.line_id] || {}).decision : it.action === filter));
+  $("#list").innerHTML = items.map(it => {
+    const d = decisions[it.line_id] || {}, e = effective(it);
+    const pill = e ? `<span class="pill ${e.action}">${e.action}</span>` : `<span class="pill rejected">${it.action}</span>`;
+    return `<div class="row ${current === it.line_id ? "sel" : ""}" data-id="${it.line_id}">
+      <div><span class="id">${it.line_id}</span> ${pill}</div>
+      <div><strong>${money(e ? e.dollars : it.dollars_at_issue)}</strong></div>
+      <div class="why">${esc(it.reason)}</div>
+      <div class="status">${it.source === "paper" ? "paper p." + it.page + " · " : ""}${d.decision ? "decided: " + d.decision : "not decided"}</div>
+    </div>`;
+  }).join("") || `<p class="label" style="padding:12px">No lines.</p>`;
+  $("#list").querySelectorAll(".row").forEach(r => r.onclick = () => { current = r.dataset.id; renderList(); renderDetail(); });
+}
+
+function evidenceHtml(ev) {
+  return ev.split(" | ").map(block => `<div class="block"><ul>${block.split("; ").map(p => `<li>${esc(p)}</li>`).join("")}</ul></div>`).join("");
+}
+
+function renderDetail() {
+  const it = DATA.items.find(i => i.line_id === current); if (!it) return;
+  const d = decisions[it.line_id] || {};
+  const rec = Object.entries(it.record).filter(([k, v]) => v !== "" && v !== null).map(([k, v]) => `${k}: ${v}`).join("\n");
+  $("#detail").innerHTML = `
+    <h2>${it.line_id} <span class="pill ${it.action}">${it.action}</span></h2>
+    <div>${esc(it.reason)}</div>
+    ${it.also.length ? `<div class="also">Also raised (lower precedence under rule 10): ${it.also.map(esc).join("; ")}</div>` : ""}
+    <div class="kv">
+      <div>Dollars at issue</div><div><strong>${money(it.dollars_at_issue)}</strong> (${it.action === "reduce" ? "billed minus allowed" : "allowed amount that would otherwise be paid"})</div>
+      <div>Claim</div><div>${esc(it.claim_number)}${it.claimant_name ? " · name on bill: " + esc(it.claimant_name) : ""}</div>
+      <div>Provider</div><div>${esc(it.billing_provider)}</div>
+      <div>Service</div><div>${esc(it.procedure_code)}${it.modifier ? " " + esc(it.modifier) : ""} × ${esc(it.units)} on ${esc(it.date_of_service)}, billed ${money(it.billed_charge)}, received ${esc(it.received_date)}</div>
+      <div>Source</div><div>${esc(it.source_ref)}</div>
+    </div>
+    <h3>Evidence</h3><div class="evidence">${evidenceHtml(it.evidence)}</div>
+    ${it.note ? `<h3>Treatment note ${esc(it.note.note_id)}</h3><pre class="rec">${esc(it.note.text)}</pre>` : ""}
+    ${it.source === "paper" ? `<h3>Scanned page ${it.page} (row highlighted) — check the values read</h3><div class="scan" id="scan"><img src="/evidence/page-${String(it.page).padStart(2, "0")}.png" alt="scan of page ${it.page}"><div class="hl" id="hl"></div></div>` : ""}
+    <h3>Source record${it.source === "paper" ? " (as read from the scan)" : " (bills.csv)"}</h3><pre class="rec">${esc(rec)}</pre>
+    <div class="decide">
+      <h3 style="margin-top:0">Your decision</h3>
+      <div class="opts">${["accept", "edit", "reject"].map(o => `<label class="opt ${d.decision === o ? "on" : ""}"><input type="radio" name="dec" value="${o}" ${d.decision === o ? "checked" : ""} style="width:auto"> ${o === "accept" ? "Accept recommendation" : o === "edit" ? "Edit" : "Reject (do not flag)"}</label>`).join("")}</div>
+      <div class="edit" id="editbox" style="${d.decision === "edit" ? "" : "display:none"}">
+        <label>Action</label><select id="eAction">${["deny", "request_records", "reduce"].map(a => `<option ${((d.action || it.action) === a) ? "selected" : ""}>${a}</option>`).join("")}</select>
+        <label>Dollars at issue</label><input id="eDollars" value="${esc(d.dollars_at_issue ?? it.dollars_at_issue)}">
+        <label>Reason</label><textarea id="eReason">${esc(d.reason ?? it.reason)}</textarea>
+      </div>
+      <div style="margin-top:8px"><textarea id="eNote" placeholder="Reviewer note (required to edit or reject)">${esc(d.note || "")}</textarea></div>
+    </div>`;
+  if (it.source === "paper" && it.box) {
+    const img = $("#scan img"), hl = $("#hl");
+    const place = () => { const s = img.clientWidth / img.naturalWidth; const [x0, y0, x1, y1] = it.box;
+      Object.assign(hl.style, {left: x0 * s + "px", top: y0 * s + "px", width: (x1 - x0) * s + "px", height: (y1 - y0) * s + "px"}); };
+    img.complete ? place() : img.onload = place; window.onresize = place;
+  }
+  const save = () => {
+    const dec = (document.querySelector('input[name="dec"]:checked') || {}).value;
+    const nd = {decision: dec, note: $("#eNote").value};
+    if (dec === "edit") Object.assign(nd, {action: $("#eAction").value, dollars_at_issue: $("#eDollars").value, reason: $("#eReason").value});
+    decisions[it.line_id] = nd; persist(); renderTotals(); renderList();
+  };
+  document.querySelectorAll('input[name="dec"]').forEach(r => r.onchange = () => { save(); renderDetail(); });
+  ["#eAction", "#eDollars", "#eReason", "#eNote"].forEach(s => $(s).oninput = save);
+}
+
+let timer;
+function persist() { clearTimeout(timer); timer = setTimeout(() => fetch("/api/draft", {method: "POST", body: JSON.stringify({decisions, reviewer: $("#reviewer").value})}), 300); }
+
+function renderExtra() {
+  const q = DATA.questions.map(q => `<li><strong>${q.line_ids.map(esc).join(", ")}</strong>: ${esc(q.question)}</li>`).join("");
+  const bad = DATA.extraction.filter(r => r.ocr_checks.length);
+  $("#extra").innerHTML = `<h3>Questions the rules do not answer (not flagged)</h3><ul>${q || "<li>None this month.</li>"}</ul>
+    <h3>Paper extraction checks</h3><ul><li>${DATA.extraction.length} paper lines read from ${DATA.accounting.pages} scanned pages; ${bad.length ? bad.length + " did not pass every cross-check:" : "all passed the cross-checks (line charges = form total, claim, tax ID / NPI, diagnosis code)."}</li>
+    ${bad.map(r => `<li>${esc(r.line_id)} (page ${r.page} row ${r.row}): ${r.ocr_checks.map(esc).join("; ")}</li>`).join("")}</ul>
+    <h3>Every line accounted for</h3><ul><li>${DATA.accounting.electronic} electronic + ${DATA.accounting.paper} paper = ${DATA.accounting.total} lines; ${DATA.items.length} flagged, ${DATA.accounting.total - DATA.items.length} not flagged.</li></ul>`;
+}
+
+$("#approveBtn").onclick = async () => {
+  $("#msg").className = "msg"; $("#msg").textContent = "Saving…";
+  const r = await fetch("/api/approve", {method: "POST", body: JSON.stringify({reviewer: $("#reviewer").value, decisions})});
+  const j = await r.json();
+  if (!r.ok) { $("#msg").className = "msg err"; $("#msg").textContent = j.error; return; }
+  $("#msg").className = "msg ok";
+  $("#msg").textContent = `Approved ${j.approved_lines} lines, ${money(j.total)} suspected overpayments pending action, at ${j.approved_at}. Wrote ${j.files.join(" and ")}. Nothing was sent to any system.`;
+};
+$("#reviewer").oninput = persist;
+
+(async () => {
+  DATA = await (await fetch("/review-data.json")).json();
+  const draft = await (await fetch("/api/draft")).json();
+  decisions = draft.decisions || {}; $("#reviewer").value = draft.reviewer || "";
+  $("#month").textContent = "· month " + DATA.month;
+  renderTotals(); renderFilters(); renderList(); renderExtra();
+  const h = decodeURIComponent(location.hash.slice(1));
+  if (DATA.items.some(i => i.line_id === h)) { current = h; renderList(); renderDetail(); }
+})();
+</script>
+</body>
+</html>

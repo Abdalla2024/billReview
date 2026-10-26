@@ -3,3 +3,7 @@ __pycache__/
 *.pyc
 .pytest_cache/
 out/*/evidence/
+out/*/review-draft.json
+out/*/approved-lines.csv
+out/*/approval-log.json
+out/*/review-data.json
