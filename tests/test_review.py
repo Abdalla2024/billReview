@@ -288,3 +288,96 @@ def test_deny_dollars_use_note_supported_units(base):
     l["claimant_dob"] = "1900-01-01"
     v = review(ref, lines, notes)
     assert v["HB2609695-01"]["action"] == "deny" and v["HB2609695-01"]["dollars"] == Decimal("96.00")
+
+
+# ------------------------------------------------------------ rehearsal hardening (synthetic edge cases)
+
+def questions_for(ref, lines, notes, line_id):
+    r = Review(lines, notes, ref)
+    v = {x["line"]["line_id"]: x for x in r.run()}
+    return v, [q["question"] for q in r.questions if line_id in q["line_ids"]]
+
+
+def test_deny_without_fee_entry_reports_zero_and_asks(base):
+    ref, lines, notes = base
+    lines = copy.deepcopy(lines)
+    l = line(lines, "HB2609117-02")
+    l.update(modifier="GT", date_of_service="2026-08-01")  # before DOI, and no fee entry for PX330 GT
+    v, qs = questions_for(ref, lines, notes, "HB2609117-02")
+    assert v["HB2609117-02"]["action"] == "deny" and v["HB2609117-02"]["dollars"] == Decimal("0.00")
+    assert any("cannot be computed" in q for q in qs)
+
+
+def test_missing_note_is_a_question_not_a_flag(base):
+    ref, lines, notes = base
+    v, qs = questions_for(ref, copy.deepcopy(lines), [n for n in notes if n["note_id"] != "TN-5157"],
+                          "HB2609695-01")
+    assert not v["HB2609695-01"]["flagged"] and any("No treatment note" in q for q in qs)
+
+
+def test_note_with_two_times_is_a_question_not_a_flag(base):
+    ref, lines, notes = base
+    notes = copy.deepcopy(notes)
+    next(n for n in notes if n["note_id"] == "TN-5157")["note"] = "Ther ex 38 min. Manual 20 min."
+    v, qs = questions_for(ref, copy.deepcopy(lines), notes, "HB2609695-01")
+    assert not v["HB2609695-01"]["flagged"] and any("more than one time" in q for q in qs)
+
+
+def test_hyphenated_minutes():
+    assert note_minutes("Therapeutic exercise, 45-minute session.")[0] == 45
+
+
+def test_rule8_counts_past_visits_in_order_and_reports_other_reading(base):
+    """Approval drops to 3 visits in August, then 12 more from September: August visits 4-5 are the
+    1st and 2nd past the approval, so September visits past 12 are the 3rd+ past and denied."""
+    _, lines, notes = base
+    ref = data.Reference(DATA / "reference")
+    a = next(a for a in ref.authorizations if a["auth_id"] == "AU-26913")
+    a.update(approved_visits="3", end_date="2026-08-31")
+    ref.authorizations.append(dict(a, auth_id="AU-TEST", approved_visits="12", start_date="2026-09-01",
+                                   end_date="2026-12-31"))
+    r = Review(copy.deepcopy(lines), notes, ref)
+    v = {x["line"]["line_id"]: x for x in r.run()}
+    by_date = {x["line"]["date_of_service"]: x["action"] for x in v.values()
+               if x["flagged"] and x["line"]["claim_number"] == "WC26-04618"}
+    assert by_date == {"2026-08-28": "request_records", "2026-08-30": "request_records",
+                       "2026-09-16": "deny", "2026-09-18": "deny", "2026-09-20": "deny", "2026-09-22": "deny"}
+    q = [q for q in r.questions if "minus its approved total" in q["question"]]
+    assert q and set(q[0]["line_ids"]) == {"HB2609969-01", "HB2609958-01"}
+
+
+def test_rule8_rule1_reading_is_reported_when_it_matters(base):
+    """A someone-else's therapy bill on the claim shifts visit numbers only under the other reading."""
+    ref, lines, notes = base
+    lines = copy.deepcopy(lines)
+    t = line(lines, "HB2609381-01")  # WC26-04618 first visit 08-20
+    lines.append(dict(t, line_id="HB2609990-01", bill_id="HB2609990", date_of_service="2026-08-19",
+                      claimant_dob="1950-01-01"))
+    r = Review(lines, notes, ref)
+    v = {x["line"]["line_id"]: x for x in r.run()}
+    assert v["HB2609990-01"]["action"] == "deny" and v["HB2609990-01"]["rules"] == [1]
+    assert v["HB2609969-01"]["action"] == "request_records"  # unchanged primary reading
+    q = [q for q in r.questions if "belongs to someone else when numbering" in q["question"]]
+    # counting it would make 09-14 visit 13 (request_records) and 09-18 visit 15 (deny)
+    assert q and set(q[0]["line_ids"]) == {"HB2609870-01", "HB2609958-01"}
+
+
+def test_rule3_unreadable_received_date_is_a_question(base):
+    ref, lines, notes = base
+    lines = copy.deepcopy(lines)
+    a = line(lines, "HB2609117-02")
+    lines.append(dict(a, line_id="HB2609999-01", bill_id="HB2609999", received_date=""))
+    v, qs = questions_for(ref, lines, notes, "HB2609999-01")
+    assert not v["HB2609999-01"]["flagged"] and any("received date" in q for q in qs)
+
+
+def test_in_network_without_date_is_priced_out_of_network_and_asked(base):
+    _, lines, notes = base
+    ref = data.Reference(DATA / "reference")
+    for p in ref.providers:
+        if p["billing_tin"] == "52-4097721":
+            p["network_since"] = ""
+    r = Review(copy.deepcopy(lines), notes, ref)
+    v = {x["line"]["line_id"]: x for x in r.run()}
+    assert not v["HB2609922-01"]["flagged"]  # PX130 1750 billed = 100% fee
+    assert any("no network_since" in q["question"] for q in r.questions)

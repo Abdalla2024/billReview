@@ -36,7 +36,7 @@ def is_timed_therapy(line):
 
 _HM = re.compile(r"\b(\d{1,2}):(\d{2})\b")
 _HR_MIN = re.compile(r"\b(\d+)\s*(?:hr|hrs|hour|hours)\s*(?:and\s*)?(\d+)\s*(?:min|mins|minute|minutes)\b", re.I)
-_N_MIN = re.compile(r"\b(\d+)\s*(?:min|mins|minute|minutes)\b", re.I)
+_N_MIN = re.compile(r"\b(\d+)\s*-?\s*(?:min|mins|minute|minutes)\b", re.I)
 _MIN_N = re.compile(r"\bminutes?\s*:?\s*(\d+)\b", re.I)
 
 
@@ -74,8 +74,14 @@ class Review:
     def __init__(self, lines, notes, ref):
         self.lines = lines
         self.ref = ref
-        self.notes = {(n["claim_number"], n["rendering_npi"], n["date_of_service"], n["procedure_code"]): n
-                      for n in notes}
+        self.notes = {}
+        self._dup_notes = defaultdict(list)
+        for n in notes:
+            key = (n["claim_number"], n["rendering_npi"], n["date_of_service"], n["procedure_code"])
+            if key in self.notes:
+                self._dup_notes[key].append(n["note_id"])
+            else:
+                self.notes[key] = n
         self.questions = []      # rule 12: questions the rules do not answer
         self.findings = defaultdict(list)   # line_id -> [finding]
         self.calc = {}           # line_id -> allowed amount calculation
@@ -115,10 +121,24 @@ class Review:
         units_paid = units
         note_ev = None
         if is_timed_therapy(line):
-            note = self.notes.get((line["claim_number"], line["rendering_npi"],
-                                   line["date_of_service"], line["procedure_code"]))
+            key = (line["claim_number"], line["rendering_npi"], line["date_of_service"], line["procedure_code"])
+            note = self.notes.get(key)
+            if note is None:
+                self.question([line["line_id"]], "No treatment note matches this timed therapy line (claim, "
+                              "rendering NPI, date of service, procedure code). TASK.md says every timed line has "
+                              "one; rule 4 was not applied and the line is not flagged for it (rule 9: missing "
+                              "documentation is not checked). Reviewer: confirm the note file is complete.")
+            elif key in self._dup_notes:
+                note = None
+                self.question([line["line_id"]], f"More than one note matches this timed therapy line "
+                              f"({', '.join([self.notes[key]['note_id']] + self._dup_notes[key])}); rule 4 was "
+                              "not applied. Reviewer: decide which note governs.")
             if note is not None:
                 minutes, said = note_minutes(note["note"])
+                if minutes is None and said:
+                    self.question([line["line_id"]], f"Note {note['note_id']} states more than one time "
+                                  f"({said}); rule 4 needs one treatment-minutes figure, so it was not applied. "
+                                  "Reviewer: read the note and decide the minutes.")
                 if minutes is not None:
                     sup = units_supported(minutes)
                     note_ev = {"note": note, "minutes": minutes, "said": said, "supported": sup}
@@ -139,7 +159,27 @@ class Review:
         return t
 
     # -- run -----------------------------------------------------------------
+    def check_provider_file(self):
+        rows = defaultdict(set)
+        for p in self.ref.providers:
+            rows[p["billing_tin"]].add((p["network_status"], p["network_since"]))
+        used = {l["billing_tin"] for l in self.lines}
+        for tin, vals in rows.items():
+            if tin not in used:
+                continue
+            ids = [l["line_id"] for l in self.lines if l["billing_tin"] == tin]
+            if len(vals) > 1:
+                self.question(ids, f"providers.csv rows for tax ID {tin} disagree on network status/date "
+                              f"({sorted(vals)}); the first row was used. Reviewer: confirm network status.")
+            for status, since in vals:
+                if status == "in_network" and not since:
+                    self.question(ids, f"providers.csv says tax ID {tin} is in_network but gives no "
+                                  "network_since date. The definition needs the date of service to be on or after "
+                                  "network_since, so these lines were priced at 100% (out of network), which can "
+                                  "only understate a reduction. Reviewer: confirm the network start date.")
+
     def run(self):
+        self.check_provider_file()
         for line in self.lines:
             c = self.compute_allowed(line)
             self.calc[line["line_id"]] = c
@@ -160,9 +200,14 @@ class Review:
 
     def rule1_claimant(self):
         belongs = {}
-        by_bill = defaultdict(list)
+        by_bill = defaultdict(set)
         for line in self.lines:
-            by_bill[line["bill_id"]].append(line)
+            by_bill[line["bill_id"]].add((line["claim_number"], line["claimant_dob"]))
+        for bill, keys in by_bill.items():
+            if len(keys) > 1:
+                self.question([l["line_id"] for l in self.lines if l["bill_id"] == bill],
+                              f"Bill {bill} carries different claim numbers or dates of birth on its lines "
+                              f"({sorted(keys)}). Rule 1 was applied line by line; reviewer should confirm.")
         for line in self.lines:
             claim = self.ref.claims.get(line["claim_number"])
             if claim is None:
@@ -209,6 +254,12 @@ class Review:
                 groups[(line["claim_number"], line["date_of_service"], line["billing_tin"])].append(line)
         for (claim, dos, tin), group in groups.items():
             if len(group) < 2:
+                continue
+            if any(not l.get("received_date") for l in group):
+                self.question([l["line_id"] for l in group],
+                              f"Same-day office visits (claim {claim}, {dos}, TIN {tin}) but a received date could "
+                              "not be read, so rule 3 cannot tell which was received later. Not flagged; "
+                              "reviewer: read the mailroom stamp and deny the later one.")
                 continue
             group.sort(key=lambda l: (l["received_date"], l["line_id"]))
             first = group[0]
@@ -290,39 +341,86 @@ class Review:
                               f"TENS purchase after {paid} paid rental months ({ev}). Rule 7 only covers purchase "
                               "before 10 months; not flagged.")
 
+    def rule8_outcomes(self, lines, auths, ordinal=True):
+        """Rule 8 for the given timed therapy lines: {line_id: (action, visit, approved, past_rank, info)}.
+
+        A visit is past the approved number when its number is higher than the total approved visits of
+        the authorizations whose dates include it. With ordinal=True (the written rule) the first 2 such
+        visits in date order get request_records and every later one is denied; ordinal=False is the
+        alternative reading (visit number minus approved total) kept only to detect where they differ.
+        """
+        visits = defaultdict(lambda: defaultdict(list))  # (claim, tin) -> dos -> [timed lines]
+        for line in lines:
+            visits[(line["claim_number"], line["billing_tin"])][line["date_of_service"]].append(line)
+        out = {}
+        for (claim, tin), by_day in visits.items():
+            past_seen = 0
+            for number, dos in enumerate(sorted(by_day), start=1):
+                covering = [a for a in auths.get((claim, tin), []) if a["start_date"] <= dos <= a["end_date"]]
+                if not covering:
+                    for l in by_day[dos]:
+                        out[l["line_id"]] = ("no_auth", number, None, None, (claim, tin, dos, by_day, covering))
+                    continue
+                approved = sum(int(a["approved_visits"]) for a in covering if a["approved_visits"].strip())
+                if number <= approved:
+                    continue
+                past_seen += 1
+                rank = past_seen if ordinal else number - approved
+                action = "request_records" if rank <= 2 else "deny"
+                for l in by_day[dos]:
+                    out[l["line_id"]] = (action, number, approved, rank, (claim, tin, dos, by_day, covering))
+        return out
+
     def rule8_therapy_authorizations(self, belongs):
         auths = defaultdict(list)
         for a in self.ref.authorizations:
             if a["service_category"].strip().lower() == "physical therapy":
                 auths[(a["claim_number"], a["billing_tin"])].append(a)
-        visits = defaultdict(lambda: defaultdict(list))  # (claim, tin) -> dos -> [timed lines]
-        for line in self.lines:
-            # visits are the claimant's own; a bill that belongs to someone else is not this claimant's visit
-            if belongs.get(line["line_id"]) and is_timed_therapy(line):
-                visits[(line["claim_number"], line["billing_tin"])][line["date_of_service"]].append(line)
-        for (claim, tin), by_day in visits.items():
-            for number, dos in enumerate(sorted(by_day), start=1):
-                covering = [a for a in auths.get((claim, tin), []) if a["start_date"] <= dos <= a["end_date"]]
-                ids = [l["line_id"] for l in by_day[dos]]
-                if not covering:
-                    self.question(ids, f"Therapy visit on {dos} (claim {claim}, TIN {tin}) has no physical "
-                                  "therapy authorization covering its date. TASK.md says this should not "
-                                  "happen; not flagged. Reviewer should check the authorization log.")
-                    continue
-                approved = sum(int(a["approved_visits"] or 0) for a in covering)
-                past = number - approved
-                if past <= 0:
-                    continue
-                action = "request_records" if past <= 2 else "deny"
-                auth_ev = "; ".join(f"{a['auth_id']} {a['approved_visits']} visits {a['start_date']} to "
-                                    f"{a['end_date']}" for a in covering)
-                for line in by_day[dos]:
-                    self.flag(line, 8, action,
-                              f"Therapy visit {number} is past the {approved} approved visits "
-                              f"({'1st or 2nd visit past: request records' if action == 'request_records' else 'more than 2 past: deny'}) (rule 8)",
-                              f"{line['source_ref']}: {line['procedure_code']} DOS {dos}, TIN {tin}; visit "
-                              f"{number} of claim {claim} at this TIN (visit dates: "
-                              f"{', '.join(sorted(by_day))}); authorizations.csv {auth_ev} = {approved} approved")
+                if not a["approved_visits"].strip().isdigit():
+                    self.question([], f"Therapy authorization {a['auth_id']} ({a['claim_number']}, TIN "
+                                  f"{a['billing_tin']}) has no usable approved_visits value "
+                                  f"({a['approved_visits']!r}); it was counted as 0 approved visits. Reviewer: "
+                                  "confirm with utilization review before acting on rule 8 lines for this claim.")
+        timed = [l for l in self.lines if is_timed_therapy(l)]
+        # Visits are the claimant's own: a bill that belongs to someone else under rule 1 is not counted.
+        own = [l for l in timed if belongs.get(l["line_id"])]
+        result = self.rule8_outcomes(own, auths)
+
+        # Readings task.md does not settle: report every line where they would change the verdict.
+        alt_rank = self.rule8_outcomes(own, auths, ordinal=False)
+        alt_rule1 = self.rule8_outcomes([l for l in timed if l["claim_number"] in self.ref.claims], auths)
+        for alt, text in (
+                (alt_rank, "Rule 8 reading: the tool counts visits past the approval in date order (the first 2 "
+                           "past visits get request_records, later past visits are denied). If instead each "
+                           "visit's number minus its approved total decided it, these lines would get: {}. This "
+                           "only differs when the covering approvals change during the month."),
+                (alt_rule1, "Rule 8 reading: the tool does not count therapy lines on a bill that rule 1 says "
+                            "belongs to someone else when numbering this claimant's visits. If those lines "
+                            "were counted, these lines would get: {}.")):
+            diff = {lid: alt.get(lid, ("not flagged",))[0] for lid in set(result) | set(alt)
+                    if belongs.get(lid) and result.get(lid, ("not flagged",))[0] != alt.get(lid, ("not flagged",))[0]}
+            if diff:
+                self.question(sorted(diff), text.format(", ".join(f"{k} {v}" for k, v in sorted(diff.items()))))
+
+        for line in own:
+            r = result.get(line["line_id"])
+            if r is None:
+                continue
+            action, number, approved, rank, (claim, tin, dos, by_day, covering) = r
+            if action == "no_auth":
+                self.question([line["line_id"]], f"Therapy visit on {dos} (claim {claim}, TIN {tin}) has no "
+                              "physical therapy authorization covering its date. TASK.md says this should not "
+                              "happen; not flagged. Reviewer should check the authorization log.")
+                continue
+            auth_ev = "; ".join(f"{a['auth_id']} {a['approved_visits']} visits {a['start_date']} to "
+                                f"{a['end_date']}" for a in covering)
+            nth = {1: "1st", 2: "2nd", 3: "3rd"}.get(rank, f"{rank}th")
+            self.flag(line, 8, action,
+                      f"Therapy visit {number} is past the {approved} approved visits; it is the {nth} visit past "
+                      f"the approval ({'first 2 past: request records' if action == 'request_records' else 'after the first 2 past: deny'}) (rule 8)",
+                      f"{line['source_ref']}: {line['procedure_code']} DOS {dos}, TIN {tin}; visit "
+                      f"{number} of claim {claim} at this TIN (visit dates: "
+                      f"{', '.join(sorted(by_day))}); authorizations.csv {auth_ev} = {approved} approved")
 
     # -- combine (rules 10, 11) ----------------------------------------------
     def verdicts(self):
@@ -337,7 +435,11 @@ class Review:
             action = fs[0]["action"]
             chosen = [f for f in fs if f["action"] == action]
             if c is None:
-                dollars = None
+                # rule 11 needs the allowed amount; never substitute the billed charge
+                dollars = Decimal("0.00")
+                self.question([line["line_id"]], f"Line is flagged {action} but its allowed amount cannot be "
+                              "computed (see the pricing question for this line), so dollars at issue are shown "
+                              "as 0.00 rather than guessed. Reviewer: price the line and edit the dollars.")
             elif action == "reduce":
                 dollars = c["billed"] - c["allowed"]
             else:

@@ -123,7 +123,7 @@ def write_summary(verdicts, questions, extraction_rows, accounting, path, month)
     out.append("## Questions the rules do not answer (rule 12, not flagged on these alone)")
     if questions:
         for q in questions:
-            out.append(f"- {', '.join(q['line_ids'])}: {q['question']}")
+            out.append(f"- {', '.join(q['line_ids']) or 'Reference data'}: {q['question']}")
     else:
         out.append("- None this month.")
     out.append("")
