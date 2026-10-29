@@ -30,7 +30,7 @@ button{color:inherit}
 h1{font-size:27px;line-height:1.2;letter-spacing:-.035em;margin:0;font-weight:720}
 .month{color:var(--muted);font-size:15px;font-weight:500;letter-spacing:0}
 .heading-note{color:var(--muted);font-size:13px;margin-top:5px}
-.stats{display:grid;grid-template-columns:minmax(230px,1.4fr) repeat(3,minmax(150px,1fr));gap:12px;margin-bottom:14px}
+.stats{display:grid;grid-template-columns:minmax(210px,1.4fr) repeat(4,minmax(130px,1fr));gap:12px;margin-bottom:14px}
 .stat{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:15px 17px;box-shadow:var(--shadow);min-width:0}
 .stat-label{color:var(--muted);font-size:12px;font-weight:600;letter-spacing:.01em}
 .stat-value{font-size:23px;font-weight:720;letter-spacing:-.03em;margin-top:3px;line-height:1.2}
@@ -194,7 +194,8 @@ function renderTotals(){
   $("#totals").innerHTML=`<div class="stat total"><div class="stat-label">Suspected dollars at issue</div><div class="stat-value">${money(total)}</div><div class="stat-sub">${decided} of ${flagged} flagged lines reviewed</div></div>
     <div class="stat"><div class="stat-label">Flagged lines</div><div class="stat-value">${flagged}<span style="font-size:14px;color:var(--muted);font-weight:550"> / ${totalLines}</span></div><div class="stat-sub">${Math.max(0,totalLines-flagged)} lines not flagged</div></div>
     <div class="stat"><div class="stat-label">Deny</div><div class="stat-value deny-text">${money(by.deny)}</div><div class="stat-sub">${DATA.items.filter(i=>i.action==="deny").length} recommendations</div></div>
-    <div class="stat"><div class="stat-label">Request records · Reduce</div><div class="stat-value records-text">${money(by.request_records)} <span style="font-size:13px;color:var(--muted)">·</span> <span class="reduce-text">${money(by.reduce)}</span></div><div class="stat-sub">${DATA.items.filter(i=>i.action==="request_records").length} request · ${DATA.items.filter(i=>i.action==="reduce").length} reduce</div></div>`;
+    <div class="stat"><div class="stat-label">Request records</div><div class="stat-value records-text">${money(by.request_records)}</div><div class="stat-sub">${DATA.items.filter(i=>i.action==="request_records").length} recommendations</div></div>
+    <div class="stat"><div class="stat-label">Reduce</div><div class="stat-value reduce-text">${money(by.reduce)}</div><div class="stat-sub">${DATA.items.filter(i=>i.action==="reduce").length} recommendations</div></div>`;
   $("#queue-count").textContent=flagged;
   const count=Object.values(decisions).filter(d=>d.decision).length;
   $("#progress-copy").textContent=`${count} of ${flagged} decisions recorded`;
